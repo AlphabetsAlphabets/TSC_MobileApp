@@ -3,6 +3,8 @@ using System.Diagnostics;
 using Xamarin.Forms;
 using Xamarin.Essentials;
 
+using System.Collections;
+
 using Plugin.Media.Abstractions;
 using Plugin.Media;
 
@@ -17,7 +19,7 @@ namespace App1
     public partial class MainPage : ContentPage
     {
         // Fields
-        static string iPv4 = "192.168.1.143:5000";
+        static string iPv4 = "192.168.1.143:5000/";
         static string uri = $"http://{iPv4}";
 
         public MainPage()
@@ -33,7 +35,10 @@ namespace App1
                 PickerTitle = "Pick image(s)"
             });
 
+            if (images == null) { Debug.WriteLine("User cancelled operation"); return; }
+
             string imagePath = "";
+            string imageName = "";
             int count = 0;
 
             CrossToastPopUp.Current.ShowToastMessage("Uploading image(s)");
@@ -42,6 +47,7 @@ namespace App1
                 try
                 {
                     Debug.WriteLine($"Image name: {image.FileName}");
+                    imageName = image.FileName;
                     imagePath = image.FullPath;
 
                     Debug.WriteLine($"Image path: {imagePath}");
@@ -50,7 +56,11 @@ namespace App1
                     var result = await Request.Upload(uri, imagePath, image.FileName);
 
                     if (result.Code > 299) throw new HttpErrorException(result.Code, result.Message);
-                    else if (result.Code == 200) Debug.WriteLine($"Request successful, image has been uploaded to: {result.Path}");
+                    else if (result.Code == 200)
+                    {
+                        CrossToastPopUp.Current.ShowCustomToast($"Uploaded {imageName}", "grey", "green");
+                        Debug.WriteLine($"Request successful, image has been uploaded to: {result.Path}");
+                    }
 
                 } catch (Exception ex)
                 {
@@ -59,8 +69,10 @@ namespace App1
                     break;
                 }
             }
-            if (count == 0) { statusBar.Text = "Image(s) successfully uploaded!"; CrossToastPopUp.Current.ShowCustomToast("Uploaded.", "grey", "green"); }
-            else if (count == 1) { statusBar.Text = "Image(s) not uploaded."; CrossToastPopUp.Current.ShowCustomToast("Not uploaded.", "grey", "red"); }
+            if (count == 1) {
+                CrossToastPopUp.Current.ShowCustomToast($"Image {imageName} not uploaded.", "grey", "red");
+                CrossToastPopUp.Current.ShowCustomToast($"URI: {uri}", "grey", "red");
+            }
         }
     }
 }
