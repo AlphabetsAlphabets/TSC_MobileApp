@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 using System.Diagnostics;
 using System.Threading.Tasks;
 
@@ -11,9 +10,18 @@ namespace App1
 {
     public static class Request
     {
-        private static RestClient client = new RestClient();
+        // Summary:
+        //   The request class hosts the functions associated with uploading, and getting the credentials of the user.
+        //    Getting their respective api key, assuming that they have provided the correct username, and password.
+        
+
+        private static readonly RestClient client = new RestClient();
         public static async Task<UploadRequest> Upload(string uri, string path, string name)
         {
+            /*
+            Summary:
+                Makes a request to the upload endpoint. And uploads the images. 
+            */
             client.BaseUrl = new Uri(uri);
             Debug.WriteLine("Making a PUT request");
             var request = new RestRequest($"upload/{name}", DataFormat.Json);
@@ -33,8 +41,10 @@ namespace App1
                 CrossToastPopUp.Current.ShowCustomToast("Unable to send request.", "white", "red");
                 CrossToastPopUp.Current.ShowCustomToast($"{client.BaseUrl}{request.Resource}", "white", "red");
                 Debug.WriteLine($"Error message:\n{ex.Message}");
-                UploadRequest upload = new UploadRequest();
-                upload.Code = 400;
+                UploadRequest upload = new UploadRequest()
+                {
+                    Code = 400
+                };
                 return upload;
             }
         }

@@ -1,14 +1,23 @@
 ﻿using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
-using System.Net.Http;
-using System.Text;
-using System.IO;
+
+/*
+Main purpose is to be able to parse json
+*/
 
 namespace App1
 {
-[Serializable]
-    public class Mock
+    [Serializable]
+    public class Sync
+    {
+        [JsonProperty("key")]
+        public string Key { get; set; }
+        [JsonProperty("user")]
+        public string User { get; set; }
+    }
+
+    [Serializable]
+    public class Mock // mock request endpoint
     {
         [JsonProperty("first")]
         public string First { get; }
@@ -18,7 +27,7 @@ namespace App1
         public string Thrid { get; }
     }
 
-    [Serializable]
+    [Serializable] // Upload endpoint
     public class UploadRequest
     {
         [JsonProperty("success")]
@@ -35,7 +44,7 @@ namespace App1
     }
 
     [Serializable]
-    public class Credentials 
+    public class Credentials // login endpoint
     {
         [JsonProperty("fid")]
         public string Fid { get; set; }
