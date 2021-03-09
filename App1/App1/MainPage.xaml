@@ -20,7 +20,10 @@
                 TranslationX="-120" TranslationY="-52"/>
 
         <Button Text="In compound?" Clicked="In_Area" HorizontalOptions="Center" VerticalOptions="Center"
-                TranslationX="75" TranslationY="-100"/> 
+                TranslationX="75" TranslationY="-100"/>
+
+        <Button Text="Set Bounds" Clicked="Set_Bounds" HorizontalOptions="Center" VerticalOptions="Center"/>
+
     </StackLayout>
 
 </ContentPage>

@@ -1,32 +1,13 @@
-﻿using Newtonsoft.Json;
+﻿using CsvHelper.Configuration.Attributes;
+using Newtonsoft.Json;
 using System;
 
 /*
-Main purpose is to be able to parse json
+Main purpose is to be able to parse json, and csv files. And host custom exception messages.
 */
 
 namespace App1
 {
-    [Serializable]
-    public class Sync
-    {
-        [JsonProperty("key")]
-        public string Key { get; set; }
-        [JsonProperty("user")]
-        public string User { get; set; }
-    }
-
-    [Serializable]
-    public class Mock // mock request endpoint
-    {
-        [JsonProperty("first")]
-        public string First { get; }
-        [JsonProperty("second")]
-        public string Second { get; }
-        [JsonProperty("third")]
-        public string Thrid { get; }
-    }
-
     [Serializable] // Upload endpoint
     public class UploadRequest
     {
@@ -51,6 +32,14 @@ namespace App1
         [JsonProperty("key")]
         public string Key { get; set; }
     }
+
+    [Serializable]
+    class Locale
+    {
+        [JsonProperty("location_information")]
+        public string Location_Information { get; set; }
+    }
+
     class HttpErrorException : Exception
     {
         public HttpErrorException(int errorCode, string message)

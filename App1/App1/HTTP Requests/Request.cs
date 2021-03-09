@@ -59,5 +59,14 @@ namespace App1
             Debug.WriteLine("Requested made, returning result");
             return content;
         }
+
+        public static async Task<string> Get_Location(string uri, string location_name)
+        {
+            client.BaseUrl = new Uri(uri);
+            var request = new RestRequest($"location/{location_name}");
+            var result = await client.GetAsync<Locale>(request);
+
+            return null;
+        }
     }
 }

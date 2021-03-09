@@ -1,32 +1,63 @@
 ﻿using System;
+using System.IO;
+using System.Threading;
 using System.Diagnostics;
+using System.Globalization;
+using System.Collections.Generic;
 
+// Xamarin
 using Xamarin.Forms;
 using Xamarin.Essentials;
 
-using ZXing.Net.Mobile.Forms;
-
-using Plugin.Toast;
+// NuGet packages
+using CsvHelper;
 using Geolocation;
-using System.Threading;
+using Plugin.Toast;
+using Newtonsoft.Json;
+using ZXing.Net.Mobile.Forms;
+using CsvHelper.Configuration;
 
 namespace App1
 {
+    // IOS, Android, cross platform.
+    // Put debtor code into QR
+    // Log current location when you take an image
+    // Increase the radius by 10 - 20% from phone's point
+
     public partial class MainPage : ContentPage
     {
         // Fields
         private ZXingScannerPage Scanner_Page { get; set; } = new ZXingScannerPage();
-        public string DbPath { get; } = @"/storage/emulated/0/Android/Data/PictureApp.jiahong/files/employee.db";
+        public string DbPath = @"/storage/emulated/0/Android/Data/PictureApp.jiahong/files/employee.db";
+        public string Locations_Path = @"/storage/emulated/0/Android/Data/PictureApp.jiahong/files/locations.csv";
+        public string Base_Path = @"/storage/emulated/0/Android/Data/PictureApp.jiahong/files/";
+        public static string iPv4 = "192.168.1.147:5000";
+        public static string uri = $"http://{iPv4}/";
 
-        // Latitude = Y, Longitude = X.
-        public double lat_one = 4.5559201; public double lon_one = 101.1155948; // Desk
-        public double lat_two = 4.5558876; public double lon_two = 101.1155414; // wall to the left
+        // Coord of compound
+        public double lat_one = 4.556026; public double lon_one = 101.115623; // Bottom left
+        public double lat_two = 4.555880; public double lon_two = 101.115608; // Top right
         public MainPage()
         {
             InitializeComponent();
         }
 
         // Features
+        private async void Set_Bounds(object sender, EventArgs e)
+        {
+            // Parse JSON
+            Debug.WriteLine("Parsing JSON.");
+            var result = JsonConvert.DeserializeObject<Locale>("hi");
+            /*
+                TODO:
+                Make a new class (or refactor it) to facilitate the change in format of the JSON response. 
+            */ 
+            Debug.WriteLine("JSON data has been parsed successfully.");
+            //double lat_one = record.Lat_one; double lon_one = record.Lon_one;
+            //double lat_two = record.Lat_two; double lon_two = record.Lon_two;
+
+        }
+        
 
         private async void In_Area(object sender, EventArgs e)
         {
@@ -38,7 +69,7 @@ namespace App1
                 current_location = await Xamarin.Essentials.Geolocation.GetLocationAsync(request, cts.Token);
             }catch (Exception ex)
             {
-                CrossToastPopUp.Current.ShowToastMessage(ex.Message);
+                CrossToastPopUp.Current.ShowToastError(ex.Message);
                 return;
             }
 
@@ -58,15 +89,9 @@ namespace App1
             Coordinate midpoint = new Coordinate(mp_lat, mp_lon);
 
             double distance_from_midpoint = Math.Abs(GeoCalculator.GetDistance(location, midpoint, 4, DistanceUnit.Meters));
-            status += $"\nDistance from centre: {distance_from_midpoint}, radius: {radius}\n\n NOTE: All values concerning distances are in meters";
-            if (distance_from_midpoint <= radius)
-            {
-                await DisplayAlert("Within the compound", status, "Ok");
-            }
-            else
-            {
-                await DisplayAlert("Not within the compound", status, "Ok");
-            }
+            status += $"\nDistance from centre: {distance_from_midpoint}, radius: {radius}\n\nNOTE: All values concerning distances are in meters";
+            if (distance_from_midpoint <= radius) await DisplayAlert("Within the compound", status, "Ok");
+            else await DisplayAlert("Not within the compound", status, "Ok");
 
             status = "";
 
@@ -78,12 +103,12 @@ namespace App1
             Scanner_Page.OnScanResult += (result) =>
             {
                 Scanner_Page.IsScanning = false;
-                Scanner_Page.HeightRequest = 250;
+                Scanner_Page.HeightRequest = 200;
 
                 Device.BeginInvokeOnMainThread(async () =>
                 {
                     await Navigation.PopModalAsync();
-                    await DisplayAlert("Scanned barcode", result.Text, "OK");
+                    await DisplayAlert("Result", result.Text, "OK");
                 });
             };
         }
@@ -93,18 +118,16 @@ namespace App1
             var connection = await Database.Connect(DbPath);
             if (connection == null)
             {
-                Debug.WriteLine("Connection not made.");
+                CrossToastPopUp.Current.ShowToastError("Connection not established.");
                 return;
             }
 
             connection.Close();
-            Debug.WriteLine("Returned!");
+            CrossToastPopUp.Current.ShowToastMessage("Connected.");
         }
 
         private async void Select_Picture(object sender, EventArgs e)
         {
-            var iPv4 = "192.168.1.143:5000";
-            var uri = $"http://{iPv4}/";
             Debug.WriteLine($"URI: {uri}");
 
             var images = await FilePicker.PickMultipleAsync(new PickOptions
