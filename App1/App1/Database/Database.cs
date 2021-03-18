@@ -1,15 +1,21 @@
-﻿using System.Diagnostics;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.IO;
+using System.Diagnostics;
 using Microsoft.Data.Sqlite;
+using System.Threading.Tasks;
 
 namespace App1
 {
+    /// <summary>
+    /// Handles database related operations
+    /// </summary>
     public static class Database
     {
         public static SqliteConnection connection = new SqliteConnection();
+        /// <summary>
+        /// Connects to the sqlite3 database
+        /// </summary>
+        /// <param name="connectionString">path to the sql file</param>
+        /// <returns>SqliteConnection</returns>
         async public static Task<SqliteConnection> Connect(string connectionString)
         {
             try

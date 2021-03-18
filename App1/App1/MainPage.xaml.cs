@@ -1,23 +1,18 @@
 ﻿// std
 using System;
-using System.IO;
 using System.Threading;
 using System.Diagnostics;
 using System.Collections.Generic;
-
 
 // Xamarin
 using Xamarin.Forms;
 using Xamarin.Essentials;
 
-// Bluetooth
-using Android.Bluetooth;
-
-
 // NuGet packages
 using Plugin.Toast;
 using ZXing.Net.Mobile.Forms;
 using Plugin.Media;
+
 
 namespace App1
 {
@@ -37,8 +32,8 @@ namespace App1
         public string DbPath = @"/storage/emulated/0/Android/Data/PictureApp.jiahong/files/employee.db"; // The user's information
 
         // Temporary fields, will be removed once a static IP is set.
-        public static string iPv4 = "192.168.1.138:5000"; // Dynamic IP
-        public static string uri = $"http://{iPv4}/"; // Fully constructed IP
+        public static string iPv4 = "192.168.1.138"; // Dynamic IP
+        public static string uri = $"http://{iPv4}:5000/"; // Fully constructed IP
 
         public MainPage()
         {
@@ -109,7 +104,6 @@ namespace App1
 
             for (int i = 0; i < names.Count; i++)
             {
-                Debug.WriteLine($"Loop: {i}");
                 var origin = new Location(lat_one[i], lon_one[i]);
                 var end = new Location(lat_two[i], lon_two[i]);
 
@@ -246,61 +240,18 @@ namespace App1
                 SaveToAlbum = true
             });
         }
-
-        // Move all printing related functions to it's own file.
-        private async void Print(object sender, EventArgs e) // Working w/exceptions & comments
+        private async void Print_Content(object sender, EventArgs e)
         {
-            /* Connets to a Bluetooth printer called MTP-2, and prints stuff.
-             * Current the printer's name is MTP-2, it will be changed in the future,
-             where the user gets to choose which device is the printer.*/
+            var socket = await Printing.ConnectToPrinterAsync();
+            if (socket == null) return;
 
-            BluetoothAdapter adapter = BluetoothAdapter.DefaultAdapter;
-            if(adapter == null || !adapter.IsEnabled)
-            {
-                CrossToastPopUp.Current.ShowToastError("Bluetooth is not turned on.");
-                return;
-            }
-            var devices = adapter.BondedDevices;
-            BluetoothDevice device = null;
-            foreach(var _device in devices)
-            {
-                if (_device.Name == "MTP-2")
-                {
-                    device = _device;
-                    break;
-                }
-            }
-            var isConnected = device.CreateBond();
-            if (!isConnected)
-            {
-                CrossToastPopUp.Current.ShowToastError("Unable to connect to bluetooth device.");
-                return;
-            }
-            var uuid = device.GetUuids()[0].Uuid;
-            var _socket = device.CreateRfcommSocketToServiceRecord(uuid);
-            await _socket.ConnectAsync();
-            isConnected = _socket.IsConnected;
-            if (!isConnected)
-            {
-                CrossToastPopUp.Current.ShowToastError("Unable to connect to bluetooth device.");
-                return;
-            }
-            var file = File.Open(Base_Path + "samepl1.txt", FileMode.Open, FileAccess.Read);
-            byte[] buffer = null;
-            await file.ReadAsync(buffer, 0, 5096);
-            string content = "YapJiaHong\n123\n456";
-            byte[] data = System.Text.Encoding.ASCII.GetBytes(content);
-            try
-            {
-                await _socket.OutputStream.WriteAsync(data, 0, data.Length); // This part is responsible for printing.
-                _socket.Close();
-                _socket.Dispose();
-            }
-            catch (Exception ex)
-            {
-                CrossToastPopUp.Current.ShowToastError($"{ex.Message}\nError: {ex.ToString()}");
-                return;
-            }
+            var text_files = await Printing.SelectTextFilesAsync(socket);
+            if (text_files == null) return;
+
+            await Printing.PrintTextFilesAsync(socket, text_files);
         }
+
     }
 }
+
+

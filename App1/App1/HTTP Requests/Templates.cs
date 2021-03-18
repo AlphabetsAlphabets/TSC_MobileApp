@@ -3,7 +3,7 @@ using Newtonsoft.Json;
 using System.Collections.Generic;
 
 /*
-Main purpose is to be able to parse json, and csv files. And host custom exception messages.
+Main purpose is to be able to parse json. And host custom exception messages.
 */
 
 namespace App1
@@ -34,11 +34,8 @@ namespace App1
     }
 
     [Serializable]
-    public class Locale
+    public class Locale // location endpoint
     {
-        //[JsonProperty("location")]
-        //public List<object> Location { get; set; }
-
         [JsonProperty("name")]
         public List<string> Name { get; set; }
 
