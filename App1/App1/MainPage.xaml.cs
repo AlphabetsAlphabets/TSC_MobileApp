@@ -1,21 +1,23 @@
-﻿using System;
+﻿// std
+using System;
 using System.IO;
 using System.Threading;
 using System.Diagnostics;
-using System.Globalization;
 using System.Collections.Generic;
+
 
 // Xamarin
 using Xamarin.Forms;
 using Xamarin.Essentials;
 
+// Bluetooth
+using Android.Bluetooth;
+
+
 // NuGet packages
-using CsvHelper;
-using Geolocation;
 using Plugin.Toast;
-using Newtonsoft.Json;
 using ZXing.Net.Mobile.Forms;
-using CsvHelper.Configuration;
+using Plugin.Media;
 
 namespace App1
 {
@@ -27,156 +29,278 @@ namespace App1
     public partial class MainPage : ContentPage
     {
         // Fields
-        private ZXingScannerPage Scanner_Page { get; set; } = new ZXingScannerPage();
-        public string DbPath = @"/storage/emulated/0/Android/Data/PictureApp.jiahong/files/employee.db";
-        public string Locations_Path = @"/storage/emulated/0/Android/Data/PictureApp.jiahong/files/locations.csv";
-        public string Base_Path = @"/storage/emulated/0/Android/Data/PictureApp.jiahong/files/";
-        public static string iPv4 = "192.168.1.147:5000";
-        public static string uri = $"http://{iPv4}/";
+        private ZXingScannerPage Scanner_Page { get; set; } = new ZXingScannerPage(); // Needed for the QR Code scanner
 
-        // Coord of compound
-        public double lat_one = 4.556026; public double lon_one = 101.115623; // Bottom left
-        public double lat_two = 4.555880; public double lon_two = 101.115608; // Top right
+        // If you want to save any files make sure you do it within Base_Path
+        public string Base_Path = @"/storage/emulated/0/Android/Data/PictureApp.jiahong/files/";
+
+        public string DbPath = @"/storage/emulated/0/Android/Data/PictureApp.jiahong/files/employee.db"; // The user's information
+
+        // Temporary fields, will be removed once a static IP is set.
+        public static string iPv4 = "192.168.1.138:5000"; // Dynamic IP
+        public static string uri = $"http://{iPv4}/"; // Fully constructed IP
+
         public MainPage()
         {
             InitializeComponent();
         }
 
-        // Features
-        private async void Set_Bounds(object sender, EventArgs e)
+        private async void In_Area(object sender, EventArgs e) // Working w/Error handling & comments
         {
-            // Parse JSON
-            Debug.WriteLine("Parsing JSON.");
-            var result = JsonConvert.DeserializeObject<Locale>("hi");
             /*
-                TODO:
-                Make a new class (or refactor it) to facilitate the change in format of the JSON response. 
-            */ 
-            Debug.WriteLine("JSON data has been parsed successfully.");
-            //double lat_one = record.Lat_one; double lon_one = record.Lon_one;
-            //double lat_two = record.Lat_two; double lon_two = record.Lon_two;
+            For this to work you need to turn on the api. The endpoint is location.py in Web API/env-api/endpoints/location.py 
+            Make sure that the table tlocations exists in the schema tsc_office. The information contained within the table looks
+            like this (https://imgur.com/a/QF9HMVt) The location's name, two sets of latitudes (lat_one, lat_two) and two sets of longitudes (lon_one, lon_two)
+             */
 
-        }
-        
-
-        private async void In_Area(object sender, EventArgs e)
-        {
             Location current_location = null;
+            List<String> names = null;
+            List<double> lat_one = null;
+            List<double> lon_one = null;
+            List<double> lat_two = null;
+            List<double> lon_two = null;
+
             try
             {
+                // Attemps to get the user's current location, if it fails it will throw an exception then cancel the geolocation request.
                 GeolocationRequest request = new GeolocationRequest(GeolocationAccuracy.Best, TimeSpan.FromSeconds(10));
                 var cts = new CancellationTokenSource();
-                current_location = await Xamarin.Essentials.Geolocation.GetLocationAsync(request, cts.Token);
-            }catch (Exception ex)
+                current_location = await Geolocation.GetLocationAsync(request, cts.Token);
+
+                // Attemps to make a HTTP GET request. Will throw an exception if it fails.
+                var json = await Request.Get_Location(uri);
+                names = json.Name;
+                lat_one = json.Lat_One; lon_one = json.Lon_One;
+                lat_two = json.Lat_Two; lon_two = json.Lon_Two;
+            }
+            // Attempts to handle all the errors. 
+            catch (TimeoutException)
+            {
+                Debug.WriteLine("Unable to make request to api.");
+                CrossToastPopUp.Current.ShowToastError("Unable to make request to api.");
+                return;
+            }
+            catch (FeatureNotEnabledException fneEx)
+            {
+                Debug.WriteLine("Location services not enabled.");
+                CrossToastPopUp.Current.ShowToastMessage($"Location services is turned off.\nDetail: {fneEx.Message}");
+                return;
+            }
+            catch (FeatureNotSupportedException fnsEx)
+            {
+                Debug.WriteLine("Feature not supported.");
+                CrossToastPopUp.Current.ShowToastMessage($"Feature is not supported on this device.\nDetailed: {fnsEx.Message}");
+                return;
+            }
+            catch (PermissionException pEx)
+            {
+                string error_message = "You have not given this app permission to access this device's location.";
+                CrossToastPopUp.Current.ShowToastMessage(error_message + $"\nDetailed: {pEx.Message}");
+                return;
+
+            }
+            catch (Exception ex)
             {
                 CrossToastPopUp.Current.ShowToastError(ex.Message);
                 return;
             }
 
-            Coordinate location = new Coordinate(current_location.Latitude, current_location.Longitude); // User's current location
+            var location = new Location(current_location.Latitude, current_location.Longitude); // User's current location
 
-            string status = $"Current lat: {current_location.Latitude}, lon: {current_location.Longitude}";
-
-            Coordinate origin = new Coordinate(lat_one, lon_one);
-            Coordinate end = new Coordinate(lat_two, lon_two);
-
-            double diameter = Math.Abs(GeoCalculator.GetDistance(origin, end, 4, DistanceUnit.Meters));
-            double radius = diameter / 2;
-
-            double mp_lat = (lat_one + lat_two) / 2;
-            double mp_lon = (lon_one + lon_two) / 2;
-
-            Coordinate midpoint = new Coordinate(mp_lat, mp_lon);
-
-            double distance_from_midpoint = Math.Abs(GeoCalculator.GetDistance(location, midpoint, 4, DistanceUnit.Meters));
-            status += $"\nDistance from centre: {distance_from_midpoint}, radius: {radius}\n\nNOTE: All values concerning distances are in meters";
-            if (distance_from_midpoint <= radius) await DisplayAlert("Within the compound", status, "Ok");
-            else await DisplayAlert("Not within the compound", status, "Ok");
-
-            status = "";
-
-        }
-
-        private async void Start_Scanner(object sender, EventArgs e)
-        {
-            await Navigation.PushModalAsync(Scanner_Page);
-            Scanner_Page.OnScanResult += (result) =>
+            for (int i = 0; i < names.Count; i++)
             {
-                Scanner_Page.IsScanning = false;
-                Scanner_Page.HeightRequest = 200;
+                Debug.WriteLine($"Loop: {i}");
+                var origin = new Location(lat_one[i], lon_one[i]);
+                var end = new Location(lat_two[i], lon_two[i]);
 
-                Device.BeginInvokeOnMainThread(async () =>
+                // Gets the diameter, then the radius from it.
+                double diameter = Math.Abs(Location.CalculateDistance(origin, end, DistanceUnits.Kilometers));
+                double radius = diameter / 2;
+
+                // The midpoint is the circle's centre
+                double mp_lat = (lat_one[i] + lat_two[i]) / 2;
+                double mp_lon = (lon_one[i] + lon_two[i]) / 2;
+
+                var midpoint = new Location(mp_lat, mp_lon);
+                var relative_distance_from_centre = Location.CalculateDistance(location, midpoint, DistanceUnits.Kilometers);
+                if (relative_distance_from_centre <= radius)
                 {
-                    await Navigation.PopModalAsync();
-                    await DisplayAlert("Result", result.Text, "OK");
-                });
-            };
-        }
-
-        private async void Establish_Connection(object sender, EventArgs e)
-        {
-            var connection = await Database.Connect(DbPath);
-            if (connection == null)
-            {
-                CrossToastPopUp.Current.ShowToastError("Connection not established.");
-                return;
+                    await DisplayAlert("Within compound", $"You are {relative_distance_from_centre * 1000} meters away from {names[i]}\nTolerance: {radius * 1000} meters", "OK");
+                    return;
+                }
             }
-
-            connection.Close();
-            CrossToastPopUp.Current.ShowToastMessage("Connected.");
+            await DisplayAlert("Not within compound.", "You are not in the area of any shops/dealers", "OK");
         }
-
-        private async void Select_Picture(object sender, EventArgs e)
+        private async void Scan_QR_Code(object sender, EventArgs e) // Working w/Error handling & comments
         {
+            // Uses the scanner_page field defined at the start of the file.
+            try
+            {
+                await Navigation.PushModalAsync(Scanner_Page);
+                Scanner_Page.OnScanResult += (result) =>
+                {
+                    Scanner_Page.IsScanning = false;
+                    Scanner_Page.HeightRequest = 250;
+
+                    Device.BeginInvokeOnMainThread(async () =>
+                    {
+                        await Navigation.PopModalAsync();
+                        await DisplayAlert("Scanned barcode", result.Text, "OK");
+                    });
+                };
+            }
+            catch (Exception ex)
+            {
+                CrossToastPopUp.Current.ShowToastError($"This app cannot use the camera.\nDetailed: {ex.Message}\nError: {ex.ToString()}");
+            }
+        }
+        private async void Establish_Connection(object sender, EventArgs e) // Working w/Error handling & comments
+        {
+            // Connects to the local sqlite database
+            try
+            {
+                var connection = await Database.Connect(DbPath);
+                if (connection == null)
+                {
+                    Debug.WriteLine("Connection not made.");
+                    CrossToastPopUp.Current.ShowToastMessage("Connection not made.");
+                    connection.Close();
+                    return;
+                }
+                CrossToastPopUp.Current.ShowToastMessage("Connection made.");
+
+                connection.Close();
+                Debug.WriteLine("Returned!");
+            }
+            catch (Exception ex)
+            {
+                CrossToastPopUp.Current.ShowToastError(ex.Message + $"Error: {ex.ToString()}");
+            }
+        }
+        private async void Upload_Image(object sender, EventArgs e) // Working w/error handling
+        {
+            // This requires the use of the api as well. Endpoint upload.
             Debug.WriteLine($"URI: {uri}");
 
-            var images = await FilePicker.PickMultipleAsync(new PickOptions
+            try
             {
-                FileTypes = FilePickerFileType.Images,
-                PickerTitle = "Pick image(s)"
-            });
-
-            if (images == null) { Debug.WriteLine("User cancelled operation"); return; }
-
-            string imageName = "";
-            int count = 0;
-
-            CrossToastPopUp.Current.ShowToastMessage("Uploading image(s)");
-            foreach (var image in images)
-            {
-                try
+                var images = await FilePicker.PickMultipleAsync(new PickOptions
                 {
-                    Debug.WriteLine($"Image name: {image.FileName}");
-                    imageName = image.FileName;
-                    string imagePath = image.FullPath;
+                    FileTypes = FilePickerFileType.Images,
+                    PickerTitle = "Pick image(s)"
+                });
 
-                    Debug.WriteLine($"Image path: {imagePath}");
+                if (images == null) { Debug.WriteLine("User cancelled operation"); return; }
 
-                    Console.WriteLine($"URI: {uri}");
-                    var result = await Request.Upload(uri, imagePath, imageName);
+                string imageName = "";
+                int count = 0;
 
-                    if (result.Code > 299) throw new HttpErrorException(result.Code, result.Message);
-                    else if (result.Code == 200)
+                CrossToastPopUp.Current.ShowToastMessage("Uploading image(s)");
+                foreach (var image in images)
+                {
+                    try
                     {
-                        CrossToastPopUp.Current.ShowCustomToast($"Uploaded {imageName}", "grey", "green");
-                        Debug.WriteLine($"Request successful, image has been uploaded to: {result.Path}");
-                    }
+                        Debug.WriteLine($"Image name: {image.FileName}");
+                        imageName = image.FileName;
+                        string imagePath = image.FullPath;
 
+                        Debug.WriteLine($"Image path: {imagePath}");
+
+                        Console.WriteLine($"URI: {uri}");
+                        var result = await Request.Upload(uri, imagePath, imageName);
+
+                        if (result.Code > 299) throw new HttpErrorException(result.Code, result.Message);
+                        else if (result.Code == 200)
+                        {
+                            CrossToastPopUp.Current.ShowCustomToast($"Uploaded {imageName}", "grey", "green");
+                            Debug.WriteLine($"Request successful, image has been uploaded to: {result.Path}");
+                        }
+
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine(ex.Message);
+                        count = 1;
+                        break;
+                    }
                 }
-                catch (Exception ex)
+                if (count == 1)
                 {
-                    Debug.WriteLine(ex.Message);
-                    count = 1;
+                    CrossToastPopUp.Current.ShowCustomToast($"Image {imageName} not uploaded.", "grey", "red");
+                    CrossToastPopUp.Current.ShowCustomToast($"URI: {uri}", "grey", "red");
+                }
+            }
+            catch (HttpErrorException heEx)
+            {
+                CrossToastPopUp.Current.ShowToastError($"Unable to make request\nDetailed: {heEx.Message}\nError: {heEx.ToString()}");
+            }
+            catch (Exception ex)
+            {
+                CrossToastPopUp.Current.ShowToastError($"{ex.Message}\nError: {ex.ToString()}");
+            }
+        }
+        private async void Take_Picture(object sender, EventArgs e)
+        {
+            var file = await CrossMedia.Current.TakePhotoAsync(new Plugin.Media.Abstractions.StoreCameraMediaOptions
+            {
+                SaveToAlbum = true
+            });
+        }
+
+        // Move all printing related functions to it's own file.
+        private async void Print(object sender, EventArgs e) // Working w/exceptions & comments
+        {
+            /* Connets to a Bluetooth printer called MTP-2, and prints stuff.
+             * Current the printer's name is MTP-2, it will be changed in the future,
+             where the user gets to choose which device is the printer.*/
+
+            BluetoothAdapter adapter = BluetoothAdapter.DefaultAdapter;
+            if(adapter == null || !adapter.IsEnabled)
+            {
+                CrossToastPopUp.Current.ShowToastError("Bluetooth is not turned on.");
+                return;
+            }
+            var devices = adapter.BondedDevices;
+            BluetoothDevice device = null;
+            foreach(var _device in devices)
+            {
+                if (_device.Name == "MTP-2")
+                {
+                    device = _device;
                     break;
                 }
             }
-            if (count == 1)
+            var isConnected = device.CreateBond();
+            if (!isConnected)
             {
-                CrossToastPopUp.Current.ShowCustomToast($"Image {imageName} not uploaded.", "grey", "red");
-                CrossToastPopUp.Current.ShowCustomToast($"URI: {uri}", "grey", "red");
+                CrossToastPopUp.Current.ShowToastError("Unable to connect to bluetooth device.");
+                return;
+            }
+            var uuid = device.GetUuids()[0].Uuid;
+            var _socket = device.CreateRfcommSocketToServiceRecord(uuid);
+            await _socket.ConnectAsync();
+            isConnected = _socket.IsConnected;
+            if (!isConnected)
+            {
+                CrossToastPopUp.Current.ShowToastError("Unable to connect to bluetooth device.");
+                return;
+            }
+            var file = File.Open(Base_Path + "samepl1.txt", FileMode.Open, FileAccess.Read);
+            byte[] buffer = null;
+            await file.ReadAsync(buffer, 0, 5096);
+            string content = "YapJiaHong\n123\n456";
+            byte[] data = System.Text.Encoding.ASCII.GetBytes(content);
+            try
+            {
+                await _socket.OutputStream.WriteAsync(data, 0, data.Length); // This part is responsible for printing.
+                _socket.Close();
+                _socket.Dispose();
+            }
+            catch (Exception ex)
+            {
+                CrossToastPopUp.Current.ShowToastError($"{ex.Message}\nError: {ex.ToString()}");
+                return;
             }
         }
-
-        // Error related functions
     }
 }

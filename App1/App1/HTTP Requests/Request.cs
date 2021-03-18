@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 using RestSharp;
@@ -31,15 +32,12 @@ namespace App1
 
                 var completeRequest = request.AddFile("image", path);
                 var content = await client.PutAsync<UploadRequest>(completeRequest);
-                CrossToastPopUp.Current.ShowCustomToast("Request sent", "white", "green");
 
                 Debug.WriteLine("Request made, returning result");
 
                 return content;
             } catch (Exception ex)
             {
-                CrossToastPopUp.Current.ShowCustomToast("Unable to send request.", "white", "red");
-                CrossToastPopUp.Current.ShowCustomToast($"{client.BaseUrl}{request.Resource}", "white", "red");
                 Debug.WriteLine($"Error message:\n{ex.Message}");
                 UploadRequest upload = new UploadRequest()
                 {
@@ -60,13 +58,13 @@ namespace App1
             return content;
         }
 
-        public static async Task<string> Get_Location(string uri, string location_name)
+        public static async Task<Locale> Get_Location(string uri)
         {
             client.BaseUrl = new Uri(uri);
-            var request = new RestRequest($"location/{location_name}");
+            var request = new RestRequest("locations", DataFormat.Json);
             var result = await client.GetAsync<Locale>(request);
 
-            return null;
+            return result;
         }
     }
 }

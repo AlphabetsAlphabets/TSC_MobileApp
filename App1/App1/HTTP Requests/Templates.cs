@@ -1,6 +1,6 @@
-﻿using CsvHelper.Configuration.Attributes;
+﻿using System;
 using Newtonsoft.Json;
-using System;
+using System.Collections.Generic;
 
 /*
 Main purpose is to be able to parse json, and csv files. And host custom exception messages.
@@ -34,10 +34,25 @@ namespace App1
     }
 
     [Serializable]
-    class Locale
+    public class Locale
     {
-        [JsonProperty("location_information")]
-        public string Location_Information { get; set; }
+        //[JsonProperty("location")]
+        //public List<object> Location { get; set; }
+
+        [JsonProperty("name")]
+        public List<string> Name { get; set; }
+
+        [JsonProperty("lat_one")]
+        public List<double> Lat_One { get; set; }
+
+        [JsonProperty("lon_one")]
+        public List<double> Lon_One { get; set; }
+
+        [JsonProperty("lat_two")]
+        public List<double> Lat_Two { get; set; }
+
+        [JsonProperty("lon_two")]
+        public List<double> Lon_Two { get; set; }
     }
 
     class HttpErrorException : Exception

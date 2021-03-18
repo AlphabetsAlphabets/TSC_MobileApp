@@ -10,20 +10,20 @@
             <Label x:Name ="statusBar" Text="Transaction" HorizontalTextAlignment="Center" TextColor="White" FontSize="36"/>
         </Frame>
 
-        <Button Text="Pick Image(s)" Clicked="Select_Picture" HorizontalOptions="Center" VerticalOptions="Center"
+        <Button Text="Pick Image(s)" Clicked="Upload_Image" HorizontalOptions="Center" VerticalOptions="Center"
                 TranslationX="-120" TranslationY="0"/>
 
         <Button Text="Connect to Database" Clicked="Establish_Connection" HorizontalOptions="Center" VerticalOptions="Center"
                 TranslationX="75" TranslationY="-52"/>
 
-        <Button Text="Scan QR code" Clicked="Start_Scanner" HorizontalOptions="Center" VerticalOptions="Center"
+        <Button Text="Scan QR code" Clicked="Scan_QR_Code" HorizontalOptions="Center" VerticalOptions="Center"
                 TranslationX="-120" TranslationY="-52"/>
 
         <Button Text="In compound?" Clicked="In_Area" HorizontalOptions="Center" VerticalOptions="Center"
                 TranslationX="75" TranslationY="-100"/>
 
-        <Button Text="Set Bounds" Clicked="Set_Bounds" HorizontalOptions="Center" VerticalOptions="Center"/>
-
+        <Button Text="Take picture" Clicked="Take_Picture" HorizontalOptions="Center" VerticalOptions="Center"/>
+        <Button Text="Bluetooth" Clicked="Print" HorizontalOptions="Center" VerticalOptions="Center"/>
     </StackLayout>
 
 </ContentPage>
