@@ -171,7 +171,7 @@ namespace App1
                 CrossToastPopUp.Current.ShowToastError(ex.Message + $"Error: {ex.ToString()}");
             }
         }
-        private async void Upload_Image(object sender, EventArgs e) // Working w/error handling
+        private async void Upload_Image(object sender, EventArgs e) // Working w/error handling & comments
         {
             // This requires the use of the api as well. Endpoint upload.
             Debug.WriteLine($"URI: {uri}");
