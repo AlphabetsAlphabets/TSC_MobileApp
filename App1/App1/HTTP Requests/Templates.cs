@@ -31,6 +31,9 @@ namespace App1
         public string Fid { get; set; }
         [JsonProperty("key")]
         public string Key { get; set; }
+
+        [JsonProperty("message")]
+        public string Message { get; set; } = null;
     }
 
     [Serializable]

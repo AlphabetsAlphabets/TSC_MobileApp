@@ -27,12 +27,12 @@ namespace App1
         private ZXingScannerPage Scanner_Page { get; set; } = new ZXingScannerPage(); // Needed for the QR Code scanner
 
         // If you want to save any files make sure you do it within Base_Path
-        public string Base_Path = @"/storage/emulated/0/Android/Data/PictureApp.jiahong/files/";
+        public static string Base_Path = @"/storage/emulated/0/Android/Data/PictureApp.jiahong/files/";
 
         public string DbPath = @"/storage/emulated/0/Android/Data/PictureApp.jiahong/files/employee.db"; // The user's information
 
         // Temporary fields, will be removed once a static IP is set.
-        public static string iPv4 = "192.168.1.138"; // Dynamic IP
+        public static string iPv4 = "192.168.1.146"; // Dynamic IP
         public static string uri = $"http://{iPv4}:5000/"; // Fully constructed IP
 
         public MainPage()
@@ -78,19 +78,19 @@ namespace App1
             catch (FeatureNotEnabledException fneEx)
             {
                 Debug.WriteLine("Location services not enabled.");
-                CrossToastPopUp.Current.ShowToastMessage($"Location services is turned off.\nDetail: {fneEx.Message}");
+                CrossToastPopUp.Current.ShowToastError($"Location services is turned off.\nDetail: {fneEx.Message}");
                 return;
             }
             catch (FeatureNotSupportedException fnsEx)
             {
                 Debug.WriteLine("Feature not supported.");
-                CrossToastPopUp.Current.ShowToastMessage($"Feature is not supported on this device.\nDetailed: {fnsEx.Message}");
+                CrossToastPopUp.Current.ShowToastError($"Feature is not supported on this device.\nDetailed: {fnsEx.Message}");
                 return;
             }
             catch (PermissionException pEx)
             {
                 string error_message = "You have not given this app permission to access this device's location.";
-                CrossToastPopUp.Current.ShowToastMessage(error_message + $"\nDetailed: {pEx.Message}");
+                CrossToastPopUp.Current.ShowToastError(error_message + $"\nDetailed: {pEx.Message}");
                 return;
 
             }
@@ -171,7 +171,7 @@ namespace App1
                 CrossToastPopUp.Current.ShowToastError(ex.Message + $"Error: {ex.ToString()}");
             }
         }
-        private async void Upload_Image(object sender, EventArgs e) // Working w/error handling & comments
+        private async void Upload_Image(object sender, EventArgs e) // Working w/error handling & comments
         {
             // This requires the use of the api as well. Endpoint upload.
             Debug.WriteLine($"URI: {uri}");
@@ -187,9 +187,7 @@ namespace App1
                 if (images == null) { Debug.WriteLine("User cancelled operation"); return; }
 
                 string imageName = "";
-                int count = 0;
 
-                CrossToastPopUp.Current.ShowToastMessage("Uploading image(s)");
                 foreach (var image in images)
                 {
                     try
@@ -204,24 +202,14 @@ namespace App1
                         var result = await Request.Upload(uri, imagePath, imageName);
 
                         if (result.Code > 299) throw new HttpErrorException(result.Code, result.Message);
-                        else if (result.Code == 200)
-                        {
-                            CrossToastPopUp.Current.ShowCustomToast($"Uploaded {imageName}", "grey", "green");
-                            Debug.WriteLine($"Request successful, image has been uploaded to: {result.Path}");
-                        }
+                        else if (result.Code == 200) Debug.WriteLine($"Request successful, image has been uploaded to: {result.Path}");
 
                     }
                     catch (Exception ex)
                     {
                         Debug.WriteLine(ex.Message);
-                        count = 1;
                         break;
                     }
-                }
-                if (count == 1)
-                {
-                    CrossToastPopUp.Current.ShowCustomToast($"Image {imageName} not uploaded.", "grey", "red");
-                    CrossToastPopUp.Current.ShowCustomToast($"URI: {uri}", "grey", "red");
                 }
             }
             catch (HttpErrorException heEx)

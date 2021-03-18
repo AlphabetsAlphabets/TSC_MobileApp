@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 
 using RestSharp;
-using Plugin.Toast;
 
 
 namespace App1

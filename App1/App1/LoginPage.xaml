@@ -4,11 +4,23 @@
              x:Class="App1.LoginPage">
     <ContentPage.Content>
         <StackLayout>
-            <Label Text="Login"
-                VerticalOptions="CenterAndExpand" 
-                HorizontalOptions="CenterAndExpand" />
-            <Label Text="Username" VerticalOptions="Center" HorizontalOptions="Center" AnchorX="20" AnchorY="20"/>
-            <Entry x:Name="PasswordField" IsPassword="True" HorizontalOptions="Center" VerticalOptions="Center" AnchorX="50" AnchorY="20"/>
+            <Label Text="Username" VerticalOptions="CenterAndExpand" HorizontalOptions="CenterAndExpand"
+                   TranslationX="-125" TranslationY="50" FontSize="Medium"/>
+
+            <Entry x:Name="UsernameField" VerticalOptions="Center" HorizontalOptions="CenterAndExpand" 
+                   TranslationX="30" TranslationY="-60" WidthRequest="200"/>
+
+            <Label Text="Password" VerticalOptions="CenterAndExpand" HorizontalOptions="CenterAndExpand"
+                   TranslationX="-127" TranslationY="-120" FontSize="Medium"/>
+
+            <Entry x:Name="PasswordField" IsPassword="True" HorizontalOptions="CenterAndExpand" VerticalOptions="CenterAndExpand"
+                   TranslationX="31" TranslationY="-305" WidthRequest="200"/>
+
+            <Button Text="Login" HorizontalOptions="FillAndExpand"
+                    TranslationY="-370" Clicked="ValidateCredentials"/>
+
+            <Label x:Name="alert" Text="" HorizontalOptions="Center" VerticalOptions="Center"
+                   TranslationY="-300" FontSize="Title" TextColor="OrangeRed"/>
         </StackLayout>
     </ContentPage.Content>
 </ContentPage>
