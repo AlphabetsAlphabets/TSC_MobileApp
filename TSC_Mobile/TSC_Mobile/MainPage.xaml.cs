@@ -205,12 +205,14 @@ namespace TSC_Mobile
                         else if (result.Code == 200) Debug.WriteLine($"Request successful, image has been uploaded to: {result.Path}");
 
                     }
-                    catch (Exception ex)
+                    catch (HttpErrorException heEx)
                     {
-                        Debug.WriteLine(ex.Message);
-                        break;
+                        string status = $"The api is not turned on.\nDetailed: {heEx.Message}";
+                        CrossToastPopUp.Current.ShowToastError(status);
+                        return;
                     }
                 }
+                CrossToastPopUp.Current.ShowToastMessage("Image(s) uploaded successfully.");
             }
             catch (HttpErrorException heEx)
             {
