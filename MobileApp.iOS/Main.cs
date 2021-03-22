@@ -1,15 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using UIKit;
 
-using Foundation;
-using UIKit;
-
-<<<<<<< HEAD:TSC_Mobile/TSC_Mobile.iOS/Main.cs
-namespace TSC_Mobile.iOS
-=======
 namespace MobileApp.iOS
->>>>>>> time:MobileApp.iOS/Main.cs
 {
     public class Application
     {
