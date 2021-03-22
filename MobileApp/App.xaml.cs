@@ -2,11 +2,7 @@
 using Xamarin.Forms;
 using Xamarin.Forms.Xaml;
 
-<<<<<<< HEAD:TSC_Mobile/TSC_Mobile/App.xaml.cs
-namespace TSC_Mobile
-=======
 namespace MobileApp
->>>>>>> time:MobileApp/App.xaml.cs
 {
     public partial class App : Application
     {
@@ -14,7 +10,7 @@ namespace MobileApp
         {
             InitializeComponent();
 
-            MainPage = new LoginPage();
+            MainPage = new MainPage();
         }
 
         protected override void OnStart()

@@ -13,12 +13,7 @@ using Plugin.Media;
 using Plugin.Toast;
 using ZXing.Net.Mobile.Forms;
 
-<<<<<<< HEAD:TSC_Mobile/TSC_Mobile/MainPage.xaml.cs
-
-namespace TSC_Mobile
-=======
 namespace MobileApp
->>>>>>> time:MobileApp/MainPage.xaml.cs
 {
     // IOS, Android, cross platform.
     // Put debtor code into QR
@@ -35,11 +30,7 @@ namespace MobileApp
         }; // Needed for the QR Code scanner
 
         // If you want to save any files make sure you do it within Base_Path
-<<<<<<< HEAD:TSC_Mobile/TSC_Mobile/MainPage.xaml.cs
-        public static string Base_Path = @"/storage/emulated/0/Android/Data/PictureApp.jiahong/files/";
-=======
         public static string Base_Path = @"/storage/emulated/0/Android/Data/com.MobileApp/files/";
->>>>>>> time:MobileApp/MainPage.xaml.cs
 
         public string DbPath = @"/storage/emulated/0/Android/Data/com.MobileApp/files/employee.db"; // The user's information
 
@@ -254,7 +245,3 @@ namespace MobileApp
 
     }
 }
-<<<<<<< HEAD:TSC_Mobile/TSC_Mobile/MainPage.xaml.cs
-
-=======
->>>>>>> time:MobileApp/MainPage.xaml.cs

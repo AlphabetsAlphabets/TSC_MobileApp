@@ -3,11 +3,7 @@ using System.Diagnostics;
 using Microsoft.Data.Sqlite;
 using System.Threading.Tasks;
 
-<<<<<<< HEAD:TSC_Mobile/TSC_Mobile/Database/Database.cs
-namespace TSC_Mobile
-=======
 namespace MobileApp 
->>>>>>> time:MobileApp/Database/Database.cs
 {
     /// <summary>
     /// Handles database related operations

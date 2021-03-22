@@ -5,11 +5,7 @@ using System.Threading.Tasks;
 
 using RestSharp;
 
-<<<<<<< HEAD:TSC_Mobile/TSC_Mobile/HTTP Requests/Request.cs
-namespace TSC_Mobile
-=======
 namespace MobileApp
->>>>>>> time:MobileApp/HTTP Requests/Request.cs
 {
     /// <summary>
     /// The request class hosts the functions associated HTTP requests to a web API

@@ -9,11 +9,7 @@ using Xamarin.Essentials;
 
 using Plugin.Toast;
 
-<<<<<<< HEAD:TSC_Mobile/TSC_Mobile/Printing/Printing.cs
-namespace TSC_Mobile
-=======
 namespace MobileApp
->>>>>>> time:MobileApp/Printing/Printing.cs
 {
     public static class Printing
     {
@@ -159,7 +155,7 @@ namespace MobileApp
                 memStream.Close();
                 memStream.Dispose();
 
-                CrossToastPopUp.Current.ShowToastError($"{ioEx.Message}\nError: {ioEx.ToString()}");
+                CrossToastPopUp.Current.ShowToastError($"{ioEx.Message}\nError: {ioEx}");
                 return;
             }
         }

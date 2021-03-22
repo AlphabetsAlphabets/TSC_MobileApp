@@ -6,11 +6,7 @@ using System.Collections.Generic;
 Main purpose is to be able to parse json. And host custom exception messages.
 */
 
-<<<<<<< HEAD:TSC_Mobile/TSC_Mobile/HTTP Requests/Templates.cs
-namespace TSC_Mobile
-=======
 namespace MobileApp
->>>>>>> time:MobileApp/HTTP Requests/Templates.cs
 {
     [Serializable] // Upload endpoint
     public class UploadRequest

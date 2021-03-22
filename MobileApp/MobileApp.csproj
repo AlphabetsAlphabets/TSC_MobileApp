@@ -24,11 +24,7 @@
 
   <ItemGroup>
     <Reference Include="Mono.Android">
-<<<<<<< HEAD:TSC_Mobile/TSC_Mobile/TSC_Mobile.csproj
-      <HintPath>..\..\..\..\..\..\..\..\Program Files (x86)\Microsoft Visual Studio\2019\Community\Common7\IDE\ReferenceAssemblies\Microsoft\Framework\MonoAndroid\v11.0\Mono.Android.dll</HintPath>
-=======
       <HintPath>..\..\..\..\..\..\Program Files (x86)\Microsoft Visual Studio\2019\Community\Common7\IDE\ReferenceAssemblies\Microsoft\Framework\MonoAndroid\v8.1\Mono.Android.dll</HintPath>
->>>>>>> time:MobileApp/MobileApp.csproj
     </Reference>
   </ItemGroup>
 
