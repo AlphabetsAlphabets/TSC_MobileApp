@@ -1,23 +1,4 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<<<<<<< HEAD:TSC_Mobile/TSC_Mobile.Android/Properties/AndroidManifest.xml
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" android:versionCode="1" android:versionName="1.0" package="TSC_Mobile.Android" android:installLocation="auto">
-	<uses-sdk />
-	<uses-permission android:name="android.permission.CAMERA" />
-	<uses-permission android:name="android.permission.BLUETOOTH" />
-	<uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
-	<uses-permission android:name="android.permission.BLUETOOTH_PRIVILEGED" />
-	<uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
-	<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-	<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-	<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-	<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-	<application android:label="TSC_Mobile.Android" android:icon="@mipmap/launcher_foreground">
-		<provider android:name="android.support.v4.content.FileProvider" android:authorities="${applicationId}.fileprovider" android:exported="false" android:grantUriPermissions="true">
-			<meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths"></meta-data>
-		</provider>
-	</application>
-=======
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" android:versionCode="1" android:versionName="1.0" package="com.MobileApp" android:installLocation="auto">
 	<uses-sdk android:minSdkVersion="21" android:targetSdkVersion="30" />
 	<application android:label="MobileApp.Android" android:theme="@style/MainTheme" android:icon="@mipmap/icon">
@@ -36,5 +17,4 @@
 	<uses-permission android:name="android.permission.BLUETOOTH_PRIVILEGED" />
 	<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
->>>>>>> time:MobileApp.Android/Properties/AndroidManifest.xml
 </manifest>

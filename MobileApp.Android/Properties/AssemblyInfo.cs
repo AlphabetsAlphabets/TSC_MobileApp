@@ -6,19 +6,11 @@ using Android.App;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-<<<<<<< HEAD:TSC_Mobile/TSC_Mobile.Android/Properties/AssemblyInfo.cs
-[assembly: AssemblyTitle("TSC_Mobile.Android")]
-[assembly: AssemblyDescription("")]
-[assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("TSC_Mobile.Android")]
-=======
 [assembly: AssemblyTitle("MobileApp.Android")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("MobileApp.Android")]
->>>>>>> time:MobileApp.Android/Properties/AssemblyInfo.cs
 [assembly: AssemblyCopyright("Copyright ©  2014")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
