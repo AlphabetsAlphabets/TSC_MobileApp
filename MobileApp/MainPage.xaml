@@ -8,21 +8,46 @@
             <Label x:Name ="statusBar" Text="Transaction" HorizontalTextAlignment="Center" TextColor="White" FontSize="36"/>
         </Frame>
 
-        <Button Text="Pick Image(s)" Clicked="Upload_Image" HorizontalOptions="Center" VerticalOptions="Center"
-                TranslationX="-120" TranslationY="0"/>
+        <Label Text="Printing" FontSize="Large" HorizontalOptions="Center" VerticalOptions="Center"
+               TranslationX="-130" TranslationY="5"/>
+
+        <Button Text="Print text" Clicked="Print_Text" HorizontalOptions="Center" VerticalOptions="Center"
+                TranslationX="-25" TranslationY="-40"/>
+
+        <Button Text="Print Images" Clicked="Print_Images" HorizontalOptions="Center" VerticalOptions="Center"
+                TranslationX="100" TranslationY="-92"/>
+
+        <Label Text="Upload images" FontSize="Large" HorizontalOptions="Center" VerticalOptions="Center"
+               TranslationX="-100" TranslationY="-80"/>
+
+        <Button Text="Upload image(s)" Clicked="Upload_Image" HorizontalOptions="Center" VerticalOptions="Center"
+                TranslationX="65" TranslationY="-120"/>
+
+        <Button Text="Take picture" Clicked="Take_Picture" HorizontalOptions="Center" VerticalOptions="Center"
+                TranslationX="50" TranslationY="-120"/>
+
+        <Label Text="Geolocation" FontSize="Large" HorizontalOptions="Center" VerticalOptions="Center"
+            TranslationX="-110" TranslationY="-120"/>
+        
+        <Button Text="In compound?" Clicked="In_Area" HorizontalOptions="Center" VerticalOptions="Center"
+                TranslationX="-110" TranslationY="-120"/>
+
+        <Label Text="SQLITE3" HorizontalOptions="Center" VerticalOptions="Center" FontSize="Large"
+               TranslationX="-110" TranslationY="-132"/>
 
         <Button Text="Connect to Database" Clicked="Establish_Connection" HorizontalOptions="Center" VerticalOptions="Center"
-                TranslationX="75" TranslationY="-52"/>
+                TranslationX="-80" TranslationY="-129"/>
+
+        <Label Text="QR Code" FontSize="Large" HorizontalOptions="Center" VerticalOptions="Center"
+               TranslationX="-120" TranslationY="-120"/>
 
         <Button Text="Scan QR code" Clicked="Scan_QR_Code" HorizontalOptions="Center" VerticalOptions="Center"
-                TranslationX="-120" TranslationY="-52"/>
+                TranslationX="50" TranslationY="-169"/>
 
-        <Button Text="In compound?" Clicked="In_Area" HorizontalOptions="Center" VerticalOptions="Center"
-                TranslationX="75" TranslationY="-100"/>
-
-        <Button Text="Take picture" Clicked="Take_Picture" HorizontalOptions="Center" VerticalOptions="Center"/>
-        <Button Text="Print" Clicked="Print_Content" HorizontalOptions="Center" VerticalOptions="Center"/>
-        <SelectableItemsView></SelectableItemsView>
+        <Label Text="Test features" HorizontalOptions="Center" VerticalOptions="Center" FontSize="Large"
+               TranslationY="-50"/> 
+        <Button Text="Test new feature" Clicked="Test" HorizontalOptions="Center" VerticalOptions="Center"
+                TranslationY="-50"/>
     </StackLayout>
 
 </ContentPage>

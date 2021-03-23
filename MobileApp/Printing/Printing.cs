@@ -8,6 +8,7 @@ using Android.Bluetooth;
 using Xamarin.Essentials;
 
 using Plugin.Toast;
+using System.Diagnostics;
 
 namespace MobileApp
 {
@@ -44,13 +45,6 @@ namespace MobileApp
                     break;
                 }
             }
-            var isConnected = device.CreateBond();
-            if (!isConnected)
-            {
-                CrossToastPopUp.Current.ShowToastError("Unable to connect to bluetooth device.");
-                return null;
-            }
-
             var uuid = device.GetUuids()[0].Uuid;
             var _socket = device.CreateRfcommSocketToServiceRecord(uuid);
             try
@@ -63,7 +57,7 @@ namespace MobileApp
                 CrossToastPopUp.Current.ShowToastError(status);
                 return null;
             }
-            isConnected = _socket.IsConnected;
+            var isConnected = _socket.IsConnected;
             if (!isConnected)
             {
                 CrossToastPopUp.Current.ShowToastError("Unable to connect to bluetooth device.");
@@ -106,7 +100,7 @@ namespace MobileApp
         public static async Task PrintTextFilesAsync(BluetoothSocket _socket, IEnumerable<FileResult> text_files) { 
             foreach(var _file in text_files) {
                 var path = _file.FullPath;
-                var file = File.Open(path, FileMode.Open, FileAccess.Read);
+                var file = System.IO.File.Open(path, FileMode.Open, FileAccess.Read);
                 byte[] buffer = new byte[(int)file.Length];
                 
                 await PrintText(file, buffer, _socket);
@@ -115,49 +109,104 @@ namespace MobileApp
             _socket.Dispose();
         }
 
-        private static async Task PrintImagesAsync(BluetoothSocket _socket, IEnumerable<FileStream> images)
+        public static async Task<IEnumerable<FileResult>> SelectImageFilesAsync(BluetoothSocket _socket)
         {
             // Figure out how to print images
+            var CustomFileType =
+                new FilePickerFileType(new Dictionary<DevicePlatform, IEnumerable<String>>
+                {
+                    { DevicePlatform.Android, new[] {"image/*" } }
+                });
+
+            var options = new PickOptions
+            {
+                PickerTitle = "Please select image(s)",
+                FileTypes = CustomFileType,
+            };
+            var image_files = await FilePicker.PickMultipleAsync(options);
+            if (image_files == null) return null;
+
+            return image_files;
         }
 
-        private static async Task PrintImage(FileStream file, byte[] buffer, BluetoothSocket _socket)
+        public static async Task PrintImageFilesAsync(BluetoothSocket _socket, IEnumerable<FileResult> text_files) { 
+            foreach(var _file in text_files) {
+                var path = _file.FullPath;
+                var file = System.IO.File.Open(path, FileMode.Open, FileAccess.ReadWrite);
+                byte[] buffer = new byte[(int)file.Length];
+                
+                await PrintImage(file, buffer, _socket);
+            }
+            _socket.Close();
+            _socket.Dispose();
+        }
+
+        public static async Task PrintImageFilesAsync(String path, BluetoothSocket _socket)
         {
-            // Doesn't actually work
-            Bitmap image = null;
-            var _image = await BitmapFactory.DecodeStreamAsync(file);
+            try
+            {
+                var buffer = File.ReadAllBytes(path);
+                await PrintImage(buffer, _socket);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"ERROR: {ex}");
+                return;
+            }
+        }
 
-            var hasAlpha = _image.HasAlpha;
-            if (hasAlpha) image = _image.Copy(Bitmap.Config.Argb8888, true);
-            else image = _image;
-            _image.Dispose();
-
+        private static async Task<Bitmap> StripColor(Bitmap image)
+        {
+            image = image.Copy(Bitmap.Config.Argb8888, true);
             try
             {
                 image.EraseColor(0);
             }
             catch (Java.Lang.IllegalStateException isEx)
             {
+                Debug.WriteLine($"ERROR:\n\n{isEx.Message}");
+                return null;
+            }
+
+            return image;
+        }
+
+        private static async Task PrintImage(byte[] buffer, BluetoothSocket _socket)
+        {
+            await _socket.OutputStream.WriteAsync(buffer, 0, buffer.Length);
+        }
+
+        private static async Task PrintImage(FileStream file, byte[] buffer, BluetoothSocket _socket)
+        {
+            Bitmap _image = await BitmapFactory.DecodeStreamAsync(file);
+            var image = await StripColor(_image);
+
+            using (var memStream = new MemoryStream()) {
+                await image.CompressAsync(Bitmap.CompressFormat.Jpeg, 0, memStream);
+                buffer = memStream.ToArray();
+                await file.ReadAsync(buffer, 0, buffer.Length); // Modifies the buffer IN PLACE
+                try
+                {
+                    await _socket.OutputStream.WriteAsync(buffer, 0, buffer.Length); // This part is responsible for printing.
+                }
+                catch (Java.IO.IOException ioEx)
+                {
+                    _image.Dispose();
+                    image.Dispose();
+
+                    memStream.Close();
+                    memStream.Dispose();
+
+                    CrossToastPopUp.Current.ShowToastError($"{ioEx.Message}\nError: {ioEx}");
+                    return;
+                }
                 image.Dispose();
-                CrossToastPopUp.Current.ShowToastError($"Colour cannot be erased from the image.\nDetailed: {isEx.Message}");
-                return;
+                _image.Dispose();
             }
-
-            var memStream = new MemoryStream();
-            await image.CompressAsync(Bitmap.CompressFormat.Png, 0, memStream);
-            buffer = memStream.ToArray();
-            await file.ReadAsync(buffer, 0, buffer.Length); // Modifies the buffer IN PLACE
-            try
-            {
-                await _socket.OutputStream.WriteAsync(buffer, 0, buffer.Length); // This part is responsible for printing.
-            }
-            catch (Java.IO.IOException ioEx)
-            {
-                memStream.Close();
-                memStream.Dispose();
-
-                CrossToastPopUp.Current.ShowToastError($"{ioEx.Message}\nError: {ioEx}");
-                return;
-            }
+            
+            var status = "Print job completed.";
+            Debug.WriteLine(status);
+            CrossToastPopUp.Current.ShowToastMessage(status);
         }
 
         private static async Task PrintText(FileStream file, byte[] buffer, BluetoothSocket _socket)

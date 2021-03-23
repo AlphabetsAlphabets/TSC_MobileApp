@@ -2,6 +2,7 @@
 using System;
 using System.Threading;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using System.Collections.Generic;
 
 // Xamarin
@@ -42,6 +43,7 @@ namespace MobileApp
         {
             InitializeComponent();
         }
+
 
         private async void In_Area(object sender, EventArgs e) // Working w/Error handling & comments
         {
@@ -192,37 +194,27 @@ namespace MobileApp
 
                 foreach (var image in images)
                 {
-                    try
-                    {
-                        Debug.WriteLine($"Image name: {image.FileName}");
-                        imageName = image.FileName;
-                        string imagePath = image.FullPath;
+                    Debug.WriteLine($"Image name: {image.FileName}");
+                    imageName = image.FileName;
+                    string imagePath = image.FullPath;
 
-                        Debug.WriteLine($"Image path: {imagePath}");
+                    Debug.WriteLine($"Image path: {imagePath}");
 
-                        Console.WriteLine($"URI: {uri}");
-                        var result = await Request.Upload(uri, imagePath, imageName);
+                    Console.WriteLine($"URI: {uri}");
+                    var result = await Request.Upload(uri, imagePath, imageName);
 
-                        if (result.Code > 299) throw new HttpErrorException(result.Code, result.Message);
-                        else if (result.Code == 200) Debug.WriteLine($"Request successful, image has been uploaded to: {result.Path}");
-
-                    }
-                    catch (HttpErrorException heEx)
-                    {
-                        string status = $"The api is not turned on.\nDetailed: {heEx.Message}";
-                        CrossToastPopUp.Current.ShowToastError(status);
-                        return;
-                    }
+                    if (result.Code > 299) throw new HttpErrorException(result.Code, result.Message);
+                    else if (result.Code == 200) Debug.WriteLine($"Request successful, image has been uploaded to: {result.Path}");
                 }
                 CrossToastPopUp.Current.ShowToastMessage("Image(s) uploaded successfully.");
             }
             catch (HttpErrorException heEx)
             {
-                CrossToastPopUp.Current.ShowToastError($"Unable to make request\nDetailed: {heEx.Message}\nError: {heEx.ToString()}");
+                CrossToastPopUp.Current.ShowToastError($"Unable to make request\nDetailed: {heEx.Message}");
             }
             catch (Exception ex)
             {
-                CrossToastPopUp.Current.ShowToastError($"{ex.Message}\nError: {ex.ToString()}");
+                CrossToastPopUp.Current.ShowToastError($"{ex.Message}\nError: {ex}");
             }
         }
         private async void Take_Picture(object sender, EventArgs e)
@@ -232,7 +224,11 @@ namespace MobileApp
                 SaveToAlbum = true
             });
         }
-        private async void Print_Content(object sender, EventArgs e)
+        /*
+        TODO:
+            1. Let user choose to print images or text
+         */
+        private async void Print_Text(object sender, EventArgs e)
         {
             var socket = await Printing.ConnectToPrinterAsync();
             if (socket == null) return;
@@ -243,5 +239,37 @@ namespace MobileApp
             await Printing.PrintTextFilesAsync(socket, text_files);
         }
 
+        private async void Print_Images(object sender, EventArgs e)
+        {
+            var socket = await Printing.ConnectToPrinterAsync();
+            if (socket == null) return;
+
+            var image_files = await Printing.SelectImageFilesAsync(socket);
+            if (image_files == null) return;
+
+            await Printing.PrintImageFilesAsync(socket, image_files);
+            
+        }
+
+        private async void Test(object sender, EventArgs e)
+        {
+            var socket = await Printing.ConnectToPrinterAsync();
+            if (socket == null) return;
+
+            var image_files = await Printing.SelectImageFilesAsync(socket);
+            if (image_files == null) return;
+
+            foreach (var image in image_files)
+            {
+                var path = image.FullPath;
+                await Printing.PrintImageFilesAsync(path, socket);
+            }
+
+            var status = "Print job completed.";
+            Debug.WriteLine(status);
+            CrossToastPopUp.Current.ShowToastMessage(status);
+
+
+        }
     }
 }
