@@ -32,19 +32,19 @@ namespace MobileApp
 
                 try
                 {
-                    string liteQuery = @"CREATE TABLE [Employee] (
+                    string queryToCreateDatabase = @"CREATE TABLE [Employee] (
                                       [fdebtorcode] VARCHAR(15),
                                       [limit] INTEGER
                                       )";
 
-                    var command = new SqliteCommand(liteQuery, connection);
+                    var command = new SqliteCommand(queryToCreateDatabase, connection);
                     await command.ExecuteNonQueryAsync();
 
                     return connection;
-                } catch (SqliteException err)
+                } catch (SqliteException sqlEx)
                 {
-                    string message = err.Message;
                     connection.Close();
+                    string message = sqlEx.Message;
                     Debug.WriteLine("Error in the sql query.");
                     Debug.WriteLine($"Error message:\n{message}");
                 }

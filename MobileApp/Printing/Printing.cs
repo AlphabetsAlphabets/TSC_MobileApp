@@ -15,12 +15,14 @@ namespace MobileApp
     public static class Printing
     {
         /*
+        NOTE:
+        This only works on an android device, and does not work on an iOS device.
+
         Connets to a Bluetooth printer called MTP-2, and prints stuff.
         Current the printer's name is MTP-2, it will be changed in the future,
         where the user gets to choose which device is the printer.
         
-        NEVER PRINT IMAGES (https://imgur.com/a/wW4be9x)
-        - Unable to print images
+        It is possible to print images.
         */
 
         /// <summary>
@@ -36,17 +38,17 @@ namespace MobileApp
                 return null;
             }
             var devices = adapter.BondedDevices;
-            BluetoothDevice device = null;
-            foreach(var _device in devices)
+            BluetoothDevice printer = null;
+            foreach(var device in devices)
             {
-                if (_device.Name == "MTP-2")
+                if (device.Name == "MTP-2")
                 {
-                    device = _device;
+                    printer = device;
                     break;
                 }
             }
-            var uuid = device.GetUuids()[0].Uuid;
-            var _socket = device.CreateRfcommSocketToServiceRecord(uuid);
+            var uuidOfPrinter = printer.GetUuids()[0].Uuid;
+            var _socket = printer.CreateRfcommSocketToServiceRecord(uuidOfPrinter);
             try
             {
                 await _socket.ConnectAsync();
@@ -69,12 +71,12 @@ namespace MobileApp
         }
 
         /// <summary>
-        /// A new window is made to prompt users to select text file(s)
+        /// A new window is made to prompt users to select text file(s). For example, it is used in <see cref="MainPage.Print_Text(object, EventArgs)"/>
         /// </summary>
-        /// <param name="_socket">BluetoothSocket</param>
         /// <returns>IEnumerable of FileResult</returns>
-        public static async Task<IEnumerable<FileResult>> SelectTextFilesAsync(BluetoothSocket _socket) // Working w/exceptions & comments
+        public static async Task<IEnumerable<FileResult>> SelectTextFilesAsync() // Working w/exceptions & comments
         {
+            // To find out more about FileIO read: https://docs.microsoft.com/en-us/xamarin/essentials/file-picker?tabs=android
             var customFileType =
                 new FilePickerFileType(new Dictionary<DevicePlatform, IEnumerable<string>>
                 {
@@ -93,25 +95,43 @@ namespace MobileApp
         }
 
         /// <summary>
-        /// Sends a command to the printer to print text content from text file(s)
+        /// Sends a command to the printer to print text content from text file(s). For example, it is used in <see cref="MainPage.Print_Text(object, EventArgs)"/>
         /// </summary>
         /// <param name="_socket">BluetoothSocket</param>
         /// <param name="text_files">IEnumerable of FileResults</param>
-        public static async Task PrintTextFilesAsync(BluetoothSocket _socket, IEnumerable<FileResult> text_files) { 
-            foreach(var _file in text_files) {
-                var path = _file.FullPath;
-                var file = System.IO.File.Open(path, FileMode.Open, FileAccess.Read);
-                byte[] buffer = new byte[(int)file.Length];
+        public static async Task PrintTextFilesAsync(BluetoothSocket _socket, IEnumerable<FileResult> textFiles) { 
+            foreach(var file in textFiles) {
+                var path = file.FullPath;
+                var textFile = File.Open(path, FileMode.Open, FileAccess.Read);
+
+                int bufferSize = (int)textFile.Length;
+
+                /* A buffer is a byte array that is empty, but data will be written to it.
+                   And the data that is written will be sent over to the bluetooth device. */
+                byte[] buffer = new byte[bufferSize];
                 
-                await PrintText(file, buffer, _socket);
+                await textFile.ReadAsync(buffer, 0, bufferSize); // Write data to buffer
+                try
+                {
+                    await _socket.OutputStream.WriteAsync(buffer, 0, bufferSize); // This line is responsible for printing by sending data in buffer to the printer.
+                }
+                catch (Exception ex)
+                {
+                    CrossToastPopUp.Current.ShowToastError(ex.Message);
+                    return;
+                }
             }
             _socket.Close();
             _socket.Dispose();
         }
 
-        public static async Task<IEnumerable<FileResult>> SelectImageFilesAsync(BluetoothSocket _socket)
+        /// <summary>
+        /// Creates a new window that allows the user to select images. Used in <see cref="MainPage.Print_Images(object, EventArgs)"/>
+        /// </summary>
+        /// <returns>IEnumerable of FileResult</returns>
+        public static async Task<IEnumerable<FileResult>> SelectImageFilesAsync()
         {
-            // Figure out how to print images
+            // Selecting custom file types that you can pick, read more about file IO: https://docs.microsoft.com/en-us/xamarin/essentials/file-picker?tabs=android
             var CustomFileType =
                 new FilePickerFileType(new Dictionary<DevicePlatform, IEnumerable<String>>
                 {
@@ -129,33 +149,63 @@ namespace MobileApp
             return image_files;
         }
 
-        public static async Task PrintImageFilesAsync(BluetoothSocket _socket, IEnumerable<FileResult> text_files) { 
-            foreach(var _file in text_files) {
-                var path = _file.FullPath;
-                var file = System.IO.File.Open(path, FileMode.Open, FileAccess.ReadWrite);
-                byte[] buffer = new byte[(int)file.Length];
+        /// <summary>
+        /// Sends an array of bytes to the bluetooth printer, and initiates printing. For example, it is used in <see cref="MainPage.Print_Images(object, EventArgs)"/>
+        /// </summary>
+        /// <param name="_socket">Bluetooth socket of the device</param>
+        /// <param name="imageFiles">An IEnumerable of FileResult</param>
+        /// <returns>Task</returns>
+        public static async Task PrintImageFilesAsync(BluetoothSocket _socket, IEnumerable<FileResult> imageFiles)
+        { 
+            foreach(var file in imageFiles) {
+                var path = file.FullPath;
+                var imageFile = File.Open(path, FileMode.Open, FileAccess.ReadWrite);
                 
-                await PrintImage(file, buffer, _socket);
+                Bitmap originalImage = await BitmapFactory.DecodeStreamAsync(imageFile);
+                var strippedImage = StripColor(originalImage); // Strips the image of ALL colour, and re-colourizes it all to black.
+
+                using (var memStream = new MemoryStream()) {
+                    int bufferLength = (int)imageFile.Length;
+                    byte[] buffer = new byte[bufferLength];
+
+                    await strippedImage.CompressAsync(Bitmap.CompressFormat.Jpeg, 0, memStream); // Writes image data to memStream
+                    buffer = memStream.ToArray(); // Writes data in memStream to buffer
+                    await imageFile.ReadAsync(buffer, 0, bufferLength); // Modifies the buffer IN PLACE
+                    try
+                    {
+                        await _socket.OutputStream.WriteAsync(buffer, 0, bufferLength); // This part is responsible for printing.
+                    }
+                    catch (Java.IO.IOException ioEx)
+                    {
+                        originalImage.Dispose();
+                        strippedImage.Dispose();
+
+                        memStream.Close();
+                        memStream.Dispose();
+
+                        _socket.Close();
+                        _socket.Dispose();
+
+                        CrossToastPopUp.Current.ShowToastError($"{ioEx.Message}\nError: {ioEx}");
+                        return;
+                    }
+                    strippedImage.Dispose();
+                    originalImage.Dispose();
+                }
+                var status = "Print job completed.";
+                Debug.WriteLine(status);
+                CrossToastPopUp.Current.ShowToastMessage(status);
             }
             _socket.Close();
             _socket.Dispose();
         }
 
-        public static async Task PrintImageFilesAsync(String path, BluetoothSocket _socket)
-        {
-            try
-            {
-                var buffer = File.ReadAllBytes(path);
-                await PrintImage(buffer, _socket);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"ERROR: {ex}");
-                return;
-            }
-        }
-
-        private static async Task<Bitmap> StripColor(Bitmap image)
+        /// <summary>
+        /// Strips the image of all colour, which results in a black image. For example, it is used in <see cref="PrintImageFilesAsync(BluetoothSocket, IEnumerable{FileResult})"/>
+        /// </summary>
+        /// <param name="image">The image to remove the color from</param>
+        /// <returns>Bitmap</returns>
+        private static Bitmap StripColor(Bitmap image)
         {
             image = image.Copy(Bitmap.Config.Argb8888, true);
             try
@@ -171,59 +221,5 @@ namespace MobileApp
             return image;
         }
 
-        private static async Task PrintImage(byte[] buffer, BluetoothSocket _socket)
-        {
-            await _socket.OutputStream.WriteAsync(buffer, 0, buffer.Length);
-        }
-
-        private static async Task PrintImage(FileStream file, byte[] buffer, BluetoothSocket _socket)
-        {
-            Bitmap _image = await BitmapFactory.DecodeStreamAsync(file);
-            var image = await StripColor(_image);
-
-            using (var memStream = new MemoryStream()) {
-                await image.CompressAsync(Bitmap.CompressFormat.Jpeg, 0, memStream);
-                buffer = memStream.ToArray();
-                await file.ReadAsync(buffer, 0, buffer.Length); // Modifies the buffer IN PLACE
-                try
-                {
-                    await _socket.OutputStream.WriteAsync(buffer, 0, buffer.Length); // This part is responsible for printing.
-                }
-                catch (Java.IO.IOException ioEx)
-                {
-                    _image.Dispose();
-                    image.Dispose();
-
-                    memStream.Close();
-                    memStream.Dispose();
-
-                    CrossToastPopUp.Current.ShowToastError($"{ioEx.Message}\nError: {ioEx}");
-                    return;
-                }
-                image.Dispose();
-                _image.Dispose();
-            }
-            
-            var status = "Print job completed.";
-            Debug.WriteLine(status);
-            CrossToastPopUp.Current.ShowToastMessage(status);
-        }
-
-        private static async Task PrintText(FileStream file, byte[] buffer, BluetoothSocket _socket)
-        {
-            /*
-             writes a buffer to the printer, so it has text content to write.
-             */
-            await file.ReadAsync(buffer, 0, (int)file.Length);
-            try
-            {
-                await _socket.OutputStream.WriteAsync(buffer, 0, buffer.Length);
-            }
-            catch (Exception ex)
-            {
-                CrossToastPopUp.Current.ShowToastError(ex.Message);
-                return;
-            }
-        }
     }
 }

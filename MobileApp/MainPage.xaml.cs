@@ -30,13 +30,13 @@ namespace MobileApp
             HeightRequest = 200
         }; // Needed for the QR Code scanner
 
-        // If you want to save any files make sure you do it within Base_Path
-        public static string Base_Path = @"/storage/emulated/0/Android/Data/com.MobileApp/files/";
+        // If you want to save any files make sure you do it within the root of the mobile app
+        public static string root = @"/storage/emulated/0/Android/Data/com.MobileApp/files/";
 
         public string DbPath = @"/storage/emulated/0/Android/Data/com.MobileApp/files/employee.db"; // The user's information
 
         // Temporary fields, will be removed once a static IP is set.
-        public static string iPv4 = "192.168.1.131"; // Dynamic IP
+        public static string iPv4 = "192.168.1.137"; // Dynamic IP
         public static string uri = $"http://{iPv4}:5000/"; // Fully constructed IP
 
         public MainPage()
@@ -53,7 +53,7 @@ namespace MobileApp
             like this (https://imgur.com/a/QF9HMVt) The location's name, two sets of latitudes (lat_one, lat_two) and two sets of longitudes (lon_one, lon_two)
              */
 
-            Location current_location = null;
+            Location user_location = null;
             List<String> names = null;
             List<double> lat_one = null;
             List<double> lon_one = null;
@@ -63,15 +63,15 @@ namespace MobileApp
             try
             {
                 // Attemps to get the user's current location, if it fails it will throw an exception then cancel the geolocation request.
-                GeolocationRequest request = new GeolocationRequest(GeolocationAccuracy.Best, TimeSpan.FromSeconds(10));
+                GeolocationRequest geolocationRequest = new GeolocationRequest(GeolocationAccuracy.Best, TimeSpan.FromSeconds(10));
                 var cts = new CancellationTokenSource();
-                current_location = await Geolocation.GetLocationAsync(request, cts.Token);
+                user_location = await Geolocation.GetLocationAsync(geolocationRequest, cts.Token);
 
                 // Attemps to make a HTTP GET request. Will throw an exception if it fails.
-                var json = await Request.Get_Location(uri);
-                names = json.Name;
-                lat_one = json.Lat_One; lon_one = json.Lon_One;
-                lat_two = json.Lat_Two; lon_two = json.Lon_Two;
+                var apiResponse = await Request.Get_Location(uri);
+                names = apiResponse.Name;
+                lat_one = apiResponse.Lat_One; lon_one = apiResponse.Lon_One;
+                lat_two = apiResponse.Lat_Two; lon_two = apiResponse.Lon_Two;
             }
             // Attempts to handle all the errors. 
             catch (TimeoutException)
@@ -105,7 +105,7 @@ namespace MobileApp
                 return;
             }
 
-            var location = new Location(current_location.Latitude, current_location.Longitude); // User's current location
+            var user_coordinate = new Location(user_location.Latitude, user_location.Longitude); // User's current location
 
             for (int i = 0; i < names.Count; i++)
             {
@@ -120,8 +120,8 @@ namespace MobileApp
                 double mp_lat = (lat_one[i] + lat_two[i]) / 2;
                 double mp_lon = (lon_one[i] + lon_two[i]) / 2;
 
-                var midpoint = new Location(mp_lat, mp_lon);
-                var relative_distance_from_centre = Location.CalculateDistance(location, midpoint, DistanceUnits.Kilometers);
+                var midpoint_of_shop = new Location(mp_lat, mp_lon);
+                var relative_distance_from_centre = Location.CalculateDistance(user_coordinate, midpoint_of_shop, DistanceUnits.Kilometers);
                 if (relative_distance_from_centre <= radius)
                 {
                     await DisplayAlert("Within compound", $"You are {relative_distance_from_centre * 1000} meters away from {names[i]}\nTolerance: {radius * 1000} meters", "OK");
@@ -172,7 +172,7 @@ namespace MobileApp
             }
             catch (Exception ex)
             {
-                CrossToastPopUp.Current.ShowToastError(ex.Message + $"Error: {ex.ToString()}");
+                CrossToastPopUp.Current.ShowToastError(ex.Message + $"Error: {ex}");
             }
         }
         private async void Upload_Image(object sender, EventArgs e) // Working w/error handling & comments
@@ -202,9 +202,8 @@ namespace MobileApp
 
                     Console.WriteLine($"URI: {uri}");
                     var result = await Request.Upload(uri, imagePath, imageName);
+                    if (result == null) throw new HttpErrorException(200, "unable to make request");
 
-                    if (result.Code > 299) throw new HttpErrorException(result.Code, result.Message);
-                    else if (result.Code == 200) Debug.WriteLine($"Request successful, image has been uploaded to: {result.Path}");
                 }
                 CrossToastPopUp.Current.ShowToastMessage("Image(s) uploaded successfully.");
             }
@@ -233,7 +232,7 @@ namespace MobileApp
             var socket = await Printing.ConnectToPrinterAsync();
             if (socket == null) return;
 
-            var text_files = await Printing.SelectTextFilesAsync(socket);
+            var text_files = await Printing.SelectTextFilesAsync();
             if (text_files == null) return;
 
             await Printing.PrintTextFilesAsync(socket, text_files);
@@ -244,32 +243,11 @@ namespace MobileApp
             var socket = await Printing.ConnectToPrinterAsync();
             if (socket == null) return;
 
-            var image_files = await Printing.SelectImageFilesAsync(socket);
+            var image_files = await Printing.SelectImageFilesAsync();
             if (image_files == null) return;
 
             await Printing.PrintImageFilesAsync(socket, image_files);
             
-        }
-
-        private async void Test(object sender, EventArgs e)
-        {
-            var socket = await Printing.ConnectToPrinterAsync();
-            if (socket == null) return;
-
-            var image_files = await Printing.SelectImageFilesAsync(socket);
-            if (image_files == null) return;
-
-            foreach (var image in image_files)
-            {
-                var path = image.FullPath;
-                await Printing.PrintImageFilesAsync(path, socket);
-            }
-
-            var status = "Print job completed.";
-            Debug.WriteLine(status);
-            CrossToastPopUp.Current.ShowToastMessage(status);
-
-
         }
     }
 }

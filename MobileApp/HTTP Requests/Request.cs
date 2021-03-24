@@ -25,25 +25,21 @@ namespace MobileApp
         {
             client.BaseUrl = new Uri(uri);
             Debug.WriteLine("Making a PUT request");
-            var request = new RestRequest($"upload/{name}", DataFormat.Json);
+            var partiallyFormedRequest = new RestRequest($"upload/{name}", DataFormat.Json);
             try
             {
-                Debug.WriteLine($"Uri: {client.BaseUrl}{request.Resource}");
+                Debug.WriteLine($"Uri: {client.BaseUrl}{partiallyFormedRequest.Resource}");
 
-                var completeRequest = request.AddFile("image", path);
-                var content = await client.PutAsync<UploadRequest>(completeRequest);
+                var completeRequest = partiallyFormedRequest.AddFile("image", path);
+                var apiResponse = await client.PutAsync<UploadRequest>(completeRequest);
 
                 Debug.WriteLine("Request made, returning result");
 
-                return content;
+                return apiResponse;
             } catch (Exception ex)
             {
                 Debug.WriteLine($"Error message:\n{ex.Message}");
-                UploadRequest upload = new UploadRequest()
-                {
-                    Code = 400
-                };
-                return upload;
+                return null;
             }
         }
 
@@ -59,10 +55,10 @@ namespace MobileApp
             Debug.WriteLine("Making a GET request, to get crendetials");
             client.BaseUrl = new Uri(uri);
             var request = new RestRequest(resource, DataFormat.Json);
-            var content = await client.GetAsync<Credentials>(request);
+            var apiResponse = await client.GetAsync<Credentials>(request);
 
             Debug.WriteLine("Requested made, returning result");
-            return content;
+            return apiResponse; 
         }
 
         /// <summary>
@@ -74,9 +70,9 @@ namespace MobileApp
         {
             client.BaseUrl = new Uri(uri);
             var request = new RestRequest("locations", DataFormat.Json);
-            var result = await client.GetAsync<Locale>(request);
+            var apiResponse = await client.GetAsync<Locale>(request);
 
-            return result;
+            return apiResponse;
         }
     }
 }

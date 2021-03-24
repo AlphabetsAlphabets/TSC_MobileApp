@@ -8,6 +8,9 @@ Main purpose is to be able to parse json. And host custom exception messages.
 
 namespace MobileApp
 {
+    /// <summary>
+    /// This is used to upload images. This class is used by the function <see cref="MainPage.Upload_Image(object, EventArgs)"/>
+    /// </summary>
     [Serializable] // Upload endpoint
     public class UploadRequest
     {
@@ -16,16 +19,10 @@ namespace MobileApp
 
         [JsonProperty("message")]
         public string Message { get; }
-
-        [JsonProperty("code")]
-        public int Code { get; set; }
-
-        [JsonProperty("path")]
-        public string Path { get; set; }
     }
 
     [Serializable]
-    public class Credentials // login endpoint
+    public class Credentials // login endpoint, currently not in use.
     {
         [JsonProperty("fid")]
         public string Fid { get; set; }
@@ -36,6 +33,10 @@ namespace MobileApp
         public string Message { get; set; } = null;
     }
 
+    /// <summary>
+    /// This class is used for the <see cref="MainPage.In_Area(object, EventArgs)"/> function. A HTTP GET request is made to an api which will return with two sets
+    /// of latitude and longitude of each client's shop.
+    /// </summary>
     [Serializable]
     public class Locale // location endpoint
     {
@@ -55,6 +56,10 @@ namespace MobileApp
         public List<double> Lon_Two { get; set; }
     }
 
+    /// <summary>
+    /// This exception will throw when a request is not made successfully.
+    /// See <see cref="MainPage.Upload_Image(object, EventArgs)"/>
+    /// </summary>
     class HttpErrorException : Exception
     {
         public HttpErrorException(int errorCode, string message)
