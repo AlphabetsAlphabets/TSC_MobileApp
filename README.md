@@ -48,8 +48,8 @@ class ThisIsAnExceptionClass: Exception {
 ```
 while variables are written in camelCasing.
 ```cs
-firstName = "John";
-lastName = "Doe";
+string firstName = "John";
+string lastName = "Doe";
 
 public void WhatIsYourName(firstName: String, lastName: String) {
 	fullName = $"{firstName} {lastName}";

@@ -45,9 +45,9 @@
                 TranslationX="50" TranslationY="-169"/>
 
         <Label Text="Test features" HorizontalOptions="Center" VerticalOptions="Center" FontSize="Large"
-               TranslationY="-50" IsVisible="false"/> 
-        <Button Text="Test new feature" Clicked="In_Area" HorizontalOptions="Center" VerticalOptions="Center"
-                TranslationY="-50" IsVisible="false"/>
+               TranslationY="-50"/> 
+        <Button Text="Test new feature" Clicked="Test" HorizontalOptions="Center" VerticalOptions="Center"
+                TranslationY="-50"/>
     </StackLayout>
 
 </ContentPage>

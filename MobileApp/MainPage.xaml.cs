@@ -247,7 +247,26 @@ namespace MobileApp
             if (image_files == null) return;
 
             await Printing.PrintImageFilesAsync(socket, image_files);
-            
+        }
+        private async void Test(object sender, EventArgs e)
+        {
+            var socket = await Printing.ConnectToPrinterAsync();
+            if (socket == null) return;
+
+            var image_files = await Printing.SelectImageFilesAsync();
+            if (image_files == null) return;
+
+            foreach (var image in image_files)
+            {
+                var path = image.FullPath;
+                await Printing.PrintImageFilesAsync(path, socket);
+            }
+
+            var status = "Print job completed.";
+            Debug.WriteLine(status);
+            CrossToastPopUp.Current.ShowToastMessage(status);
+
+
         }
     }
 }

@@ -164,38 +164,35 @@ namespace MobileApp
         { 
             foreach(var file in imageFiles) {
                 var path = file.FullPath;
-                var imageFile = File.Open(path, FileMode.Open, FileAccess.ReadWrite);
+                var imageFile = File.Open(path, FileMode.Open, FileAccess.Read);
                 
                 Bitmap originalImage = await BitmapFactory.DecodeStreamAsync(imageFile);
                 var strippedImage = StripColor(originalImage); // Strips the image of ALL colour, and re-colourizes it all to black.
 
                 using (var memStream = new MemoryStream()) {
-                    int bufferLength = (int)imageFile.Length;
+                    int bufferLength = (int)imageFile.Length * 2;
                     byte[] buffer = new byte[bufferLength];
 
-                    await strippedImage.CompressAsync(Bitmap.CompressFormat.Jpeg, 0, memStream); // Writes image data to memStream
+                    await strippedImage.CompressAsync(Bitmap.CompressFormat.Png, 0, memStream); // Writes image data to memStream
                     buffer = memStream.ToArray(); // Writes data in memStream to buffer
-                    await imageFile.ReadAsync(buffer, 0, bufferLength); // Modifies the buffer IN PLACE
+                    await imageFile.ReadAsync(buffer, 0, buffer.Length); // Modifies the buffer IN PLACE
                     try
                     {
-                        await _socket.OutputStream.WriteAsync(buffer, 0, bufferLength); // This part is responsible for printing.
+                        var outputStream = _socket.OutputStream;
+                        await outputStream.WriteAsync(buffer, 0, buffer.Length); // This part is responsible for printing.
+                        await outputStream.FlushAsync();
+                        byte[] response = new byte[buffer.Length];
+                        await _socket.InputStream.ReadAsync(response, 0, response.Length);
+                        var text = System.Text.Encoding.Default.GetString(response);
+                        Debug.WriteLine($"RESPOSNE:\n\n{text}");
                     }
                     catch (Java.IO.IOException ioEx)
                     {
-                        originalImage.Dispose();
-                        strippedImage.Dispose();
-
-                        memStream.Close();
-                        memStream.Dispose();
-
                         _socket.Close();
                         _socket.Dispose();
 
                         CrossToastPopUp.Current.ShowToastError($"{ioEx.Message}\nError: {ioEx}");
-                        return;
                     }
-                    strippedImage.Dispose();
-                    originalImage.Dispose();
                 }
                 var status = "Print job completed.";
                 Debug.WriteLine(status);
@@ -203,6 +200,26 @@ namespace MobileApp
             }
             _socket.Close();
             _socket.Dispose();
+        }
+
+        public static async Task PrintImageFilesAsync(String path, BluetoothSocket _socket)
+        {
+            try
+            {
+                var imageFile = File.Open(path, FileMode.Open, FileAccess.Read);
+                int bufferLength = (int)imageFile.Length;
+                var buffer = new byte[bufferLength];
+
+                //var originalImage = await BitmapFactory.DecodeStreamAsync(imageFile);
+                //var strippedImage = StripColor(originalImage);
+
+                //strippedImage.CompressAsync(Bitmap.CompressFormat.Jpeg, 0, stream);
+
+                await _socket.OutputStream.WriteAsync(buffer, 0, bufferLength);
+            } catch (Exception ex)
+            {
+                Debug.WriteLine($"Error: {ex}\n\n{ex.Message}");
+            }
         }
 
         /// <summary>
