@@ -12,6 +12,9 @@ using System.Diagnostics;
 
 namespace MobileApp
 {
+    /// <summary>
+    /// This class is host to functions that are related to print job operations.
+    /// </summary>
     public static class Printing
     {
         /*
@@ -29,6 +32,7 @@ namespace MobileApp
         /// Connects to the bluetooth printer named MTP-2
         /// </summary>
         /// <returns>BluetoothSocket</returns>
+        /// <exception cref="Java.IO.IOException">Thrown when attempting to connect to a bluetooth capable device that isn't turned on.</exception>
         public static async Task<BluetoothSocket> ConnectToPrinterAsync()
         {
             BluetoothAdapter adapter = BluetoothAdapter.DefaultAdapter;
@@ -99,6 +103,7 @@ namespace MobileApp
         /// </summary>
         /// <param name="_socket">BluetoothSocket</param>
         /// <param name="text_files">IEnumerable of FileResults</param>
+        /// <exception cref="Exception">Occurs whenever there is any exception</exception>
         public static async Task PrintTextFilesAsync(BluetoothSocket _socket, IEnumerable<FileResult> textFiles) { 
             foreach(var file in textFiles) {
                 var path = file.FullPath;
