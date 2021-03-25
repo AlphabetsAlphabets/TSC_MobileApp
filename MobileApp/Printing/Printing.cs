@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 
@@ -113,16 +114,41 @@ namespace MobileApp
 
                 /* A buffer is a byte array that is empty, but data will be written to it.
                    And the data that is written will be sent over to the bluetooth device. */
-                byte[] buffer = new byte[bufferSize];
-                
+                byte[] buffer = new byte[bufferSize * 2];
+                string centerAlignmentByteCode = "1A 5B 00";
+                //buffer[0] = Convert.ToByte("27");
+                //buffer[1] = Convert.ToByte("97");
+                //buffer[2] = Convert.ToByte("49");
+                try
+                {
+                    var byteCode = Encoding.ASCII.GetBytes(centerAlignmentByteCode);
+                    for (int i = 0; i < byteCode.Length; i++)
+                    {
+                        var code = byteCode[i];
+                        buffer[i] = code;
+                    };
+                }
+                catch (Exception byteException)
+                {
+                    Debug.WriteLine("BYTE EXCEPTION!");
+                    var message = byteException.Message;
+                    Debug.WriteLine($"Message: {message}");
+
+
+                    Debug.WriteLine("Can't convert to byte.");
+                    return;
+                }
+
                 await textFile.ReadAsync(buffer, 0, bufferSize); // Write data to buffer
                 try
                 {
-                    await _socket.OutputStream.WriteAsync(buffer, 0, bufferSize); // This line is responsible for printing by sending data in buffer to the printer.
+                    await _socket.OutputStream.WriteAsync(buffer, 0, buffer.Length); // This line is responsible for printing by sending data in buffer to the printer.
+                    buffer = null;
                 }
                 catch (Exception ex)
                 {
                     CrossToastPopUp.Current.ShowToastError(ex.Message);
+                    buffer = null;
                     return;
                 }
             }
@@ -170,26 +196,22 @@ namespace MobileApp
                 var strippedImage = StripColor(originalImage); // Strips the image of ALL colour, and re-colourizes it all to black.
 
                 using (var memStream = new MemoryStream()) {
-                    int bufferLength = (int)imageFile.Length * 2;
+                    int bufferLength = (int)imageFile.Length;
                     byte[] buffer = new byte[bufferLength];
 
                     await strippedImage.CompressAsync(Bitmap.CompressFormat.Png, 0, memStream); // Writes image data to memStream
                     buffer = memStream.ToArray(); // Writes data in memStream to buffer
-                    await imageFile.ReadAsync(buffer, 0, buffer.Length); // Modifies the buffer IN PLACE
+                    //await imageFile.ReadAsync(buffer, 0, buffer.Length); // Modifies the buffer IN PLACE
                     try
                     {
                         var outputStream = _socket.OutputStream;
                         await outputStream.WriteAsync(buffer, 0, buffer.Length); // This part is responsible for printing.
                         await outputStream.FlushAsync();
                         byte[] response = new byte[buffer.Length];
-                        await _socket.InputStream.ReadAsync(response, 0, response.Length);
-                        var text = System.Text.Encoding.Default.GetString(response);
-                        Debug.WriteLine($"RESPOSNE:\n\n{text}");
                     }
                     catch (Java.IO.IOException ioEx)
                     {
                         _socket.Close();
-                        _socket.Dispose();
 
                         CrossToastPopUp.Current.ShowToastError($"{ioEx.Message}\nError: {ioEx}");
                     }
@@ -198,8 +220,6 @@ namespace MobileApp
                 Debug.WriteLine(status);
                 CrossToastPopUp.Current.ShowToastMessage(status);
             }
-            _socket.Close();
-            _socket.Dispose();
         }
 
         public static async Task PrintImageFilesAsync(String path, BluetoothSocket _socket)
@@ -210,12 +230,16 @@ namespace MobileApp
                 int bufferLength = (int)imageFile.Length;
                 var buffer = new byte[bufferLength];
 
-                //var originalImage = await BitmapFactory.DecodeStreamAsync(imageFile);
-                //var strippedImage = StripColor(originalImage);
+                var originalImage = await BitmapFactory.DecodeFileAsync(path);
+                var strippedImage = StripColor(originalImage);
 
-                //strippedImage.CompressAsync(Bitmap.CompressFormat.Jpeg, 0, stream);
+                using (var memStream = new MemoryStream())
+                {
+                    await strippedImage.CompressAsync(Bitmap.CompressFormat.Png, 0, memStream);
+                    buffer = memStream.ToArray(); 
 
-                await _socket.OutputStream.WriteAsync(buffer, 0, bufferLength);
+                    await _socket.OutputStream.WriteAsync(buffer, 0, buffer.Length);
+                }
             } catch (Exception ex)
             {
                 Debug.WriteLine($"Error: {ex}\n\n{ex.Message}");

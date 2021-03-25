@@ -13,6 +13,7 @@ using Xamarin.Essentials;
 using Plugin.Media;
 using Plugin.Toast;
 using ZXing.Net.Mobile.Forms;
+using Android.Bluetooth;
 
 namespace MobileApp
 {
@@ -21,6 +22,9 @@ namespace MobileApp
     // Log current location when you take an image
     // Increase the radius by 10 - 20% from phone's point
 
+    /// <summary>
+    /// This file hosts the call backs for MainPage.xaml
+    /// </summary>
     public partial class MainPage : ContentPage
     {
         // Fields
@@ -39,100 +43,33 @@ namespace MobileApp
         public static string iPv4 = "192.168.1.137"; // Dynamic IP
         public static string uri = $"http://{iPv4}:5000/"; // Fully constructed IP
 
+        public static BluetoothSocket socket = null;
+
         public MainPage()
         {
             InitializeComponent();
         }
 
-
+        /// <summary>
+        /// This function will determine whether or not a user is in a client's shop. 
+        /// The way this is calculated is in the <see cref="Locate"/> class.
+        /// </summary>
+        /// <param name="sender">The button itself</param>
+        /// <param name="e">What happens when you click a button</param>
         private async void In_Area(object sender, EventArgs e) // Working w/Error handling & comments
         {
-            /*
-            For this to work you need to turn on the api. The endpoint is location.py in Web API/env-api/endpoints/location.py 
-            Make sure that the table tlocations exists in the schema tsc_office. The information contained within the table looks
-            like this (https://imgur.com/a/QF9HMVt) The location's name, two sets of latitudes (lat_one, lat_two) and two sets of longitudes (lon_one, lon_two)
-             */
-
-            Location user_location = null;
-            List<String> names = null;
-            List<double> lat_one = null;
-            List<double> lon_one = null;
-            List<double> lat_two = null;
-            List<double> lon_two = null;
-
-            try
-            {
-                // Attemps to get the user's current location, if it fails it will throw an exception then cancel the geolocation request.
-                GeolocationRequest geolocationRequest = new GeolocationRequest(GeolocationAccuracy.Best, TimeSpan.FromSeconds(10));
-                var cts = new CancellationTokenSource();
-                user_location = await Geolocation.GetLocationAsync(geolocationRequest, cts.Token);
-
-                // Attemps to make a HTTP GET request. Will throw an exception if it fails.
-                var apiResponse = await Request.Get_Location(uri);
-                names = apiResponse.Name;
-                lat_one = apiResponse.Lat_One; lon_one = apiResponse.Lon_One;
-                lat_two = apiResponse.Lat_Two; lon_two = apiResponse.Lon_Two;
-            }
-            // Attempts to handle all the errors. 
-            catch (TimeoutException)
-            {
-                Debug.WriteLine("Unable to make request to api.");
-                CrossToastPopUp.Current.ShowToastError("Unable to make request to api.");
-                return;
-            }
-            catch (FeatureNotEnabledException fneEx)
-            {
-                Debug.WriteLine("Location services not enabled.");
-                CrossToastPopUp.Current.ShowToastError($"Location services is turned off.\nDetail: {fneEx.Message}");
-                return;
-            }
-            catch (FeatureNotSupportedException fnsEx)
-            {
-                Debug.WriteLine("Feature not supported.");
-                CrossToastPopUp.Current.ShowToastError($"Feature is not supported on this device.\nDetailed: {fnsEx.Message}");
-                return;
-            }
-            catch (PermissionException pEx)
-            {
-                string error_message = "You have not given this app permission to access this device's location.";
-                CrossToastPopUp.Current.ShowToastError(error_message + $"\nDetailed: {pEx.Message}");
-                return;
-
-            }
-            catch (Exception ex)
-            {
-                CrossToastPopUp.Current.ShowToastError(ex.Message);
-                return;
-            }
-
-            var user_coordinate = new Location(user_location.Latitude, user_location.Longitude); // User's current location
-
-            for (int i = 0; i < names.Count; i++)
-            {
-                var origin = new Location(lat_one[i], lon_one[i]);
-                var end = new Location(lat_two[i], lon_two[i]);
-
-                // Gets the diameter, then the radius from it.
-                double diameter = Math.Abs(Location.CalculateDistance(origin, end, DistanceUnits.Kilometers));
-                double radius = diameter / 2;
-
-                // The midpoint is the circle's centre
-                double mp_lat = (lat_one[i] + lat_two[i]) / 2;
-                double mp_lon = (lon_one[i] + lon_two[i]) / 2;
-
-                var midpoint_of_shop = new Location(mp_lat, mp_lon);
-                var relative_distance_from_centre = Location.CalculateDistance(user_coordinate, midpoint_of_shop, DistanceUnits.Kilometers);
-                if (relative_distance_from_centre <= radius)
-                {
-                    await DisplayAlert("Within compound", $"You are {relative_distance_from_centre * 1000} meters away from {names[i]}\nTolerance: {radius * 1000} meters", "OK");
-                    return;
-                }
-            }
-            await DisplayAlert("Not within compound.", "You are not in the area of any shops/dealers", "OK");
+            string status = await Locate.IsUserNearClientAsync(uri);
+            await DisplayAlert("Status", status, "OK");
         }
+        /// <summary>
+        /// Scans the QR code, and checks the user's current location to see if the user is in a client's shop.
+        /// </summary>
+        /// <param name="sender">The button itself</param>
+        /// <param name="e">What happens when you click a button</param>
         private async void Scan_QR_Code(object sender, EventArgs e) // Working w/Error handling & comments
         {
             // Uses the scanner_page field defined at the start of the file.
+            string qrValue = "";
             try
             {
                 await Navigation.PushModalAsync(Scanner_Page);
@@ -143,15 +80,25 @@ namespace MobileApp
                     Device.BeginInvokeOnMainThread(async () =>
                     {
                         await Navigation.PopModalAsync();
-                        await DisplayAlert("Scanned barcode", result.Text, "OK");
+                        qrValue = result.Text;
+
+                    // Get user's location 
+                    string status = await Locate.IsUserNearClientAsync(uri);
+                    await DisplayAlert("Status", status, "OK");
                     });
                 };
-            }
+                // Check the user's current location
+            } // Attempts to handle all the errors. 
             catch (Exception ex)
             {
-                CrossToastPopUp.Current.ShowToastError($"This app cannot use the camera.\nDetailed: {ex.Message}\nError: {ex.ToString()}");
+                CrossToastPopUp.Current.ShowToastError(ex.Message);
             }
         }
+        /// <summary>
+        /// Connects to the SQLITE3 database
+        /// </summary>
+        /// <param name="sender">The button itself</param>
+        /// <param name="e">What happens when you click a button</param>
         private async void Establish_Connection(object sender, EventArgs e) // Working w/Error handling & comments
         {
             // Connects to the local sqlite database
@@ -175,6 +122,11 @@ namespace MobileApp
                 CrossToastPopUp.Current.ShowToastError(ex.Message + $"Error: {ex}");
             }
         }
+        /// <summary>
+        /// Uploads an image to the server through the API.
+        /// </summary>
+        /// <param name="sender">The button itself</param>
+        /// <param name="e">What happens when you click a button</param>
         private async void Upload_Image(object sender, EventArgs e) // Working w/error handling & comments
         {
             // This requires the use of the api as well. Endpoint upload.
@@ -216,6 +168,11 @@ namespace MobileApp
                 CrossToastPopUp.Current.ShowToastError($"{ex.Message}\nError: {ex}");
             }
         }
+        /// <summary>
+        /// Takes an image
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private async void Take_Picture(object sender, EventArgs e)
         {
             var file = await CrossMedia.Current.TakePhotoAsync(new Plugin.Media.Abstractions.StoreCameraMediaOptions
@@ -227,6 +184,11 @@ namespace MobileApp
         TODO:
             1. Let user choose to print images or text
          */
+        /// <summary>
+        /// Prints text from a text file
+        /// </summary>
+        /// <param name="sender">The button itself</param>
+        /// <param name="e">What happens when you click a button</param>
         private async void Print_Text(object sender, EventArgs e)
         {
             var socket = await Printing.ConnectToPrinterAsync();
@@ -238,6 +200,11 @@ namespace MobileApp
             await Printing.PrintTextFilesAsync(socket, text_files);
         }
 
+        /// <summary>
+        /// Prints an image. (Doesn't work)
+        /// </summary>
+        /// <param name="sender">The button itself</param>
+        /// <param name="e">What happens when you click a button</param>
         private async void Print_Images(object sender, EventArgs e)
         {
             var socket = await Printing.ConnectToPrinterAsync();
@@ -247,7 +214,15 @@ namespace MobileApp
             if (image_files == null) return;
 
             await Printing.PrintImageFilesAsync(socket, image_files);
+            
+            socket.Close();
+            socket.Dispose();
         }
+        /// <summary>
+        /// Testing purposes only. For when you want to workshop something, and to not modify existing code.
+        /// </summary>
+        /// <param name="sender">The button itself</param>
+        /// <param name="e">What happens when you click a button</param>
         private async void Test(object sender, EventArgs e)
         {
             var socket = await Printing.ConnectToPrinterAsync();
@@ -266,6 +241,8 @@ namespace MobileApp
             Debug.WriteLine(status);
             CrossToastPopUp.Current.ShowToastMessage(status);
 
+            socket.Close();
+            socket.Dispose();
 
         }
     }
