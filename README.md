@@ -46,10 +46,10 @@ class ThisIsAnExceptionClass: Exception {
 	}
 }
 ```
-while variables are written in camelCase.
+while variables are written in either camelCase, or snake_case.
 ```cs
-string firstName = "John";
-string lastName = "Doe";
+string firstName = "John"; // camelCase
+string last_name = "Doe"; // snake_case
 
 public void WhatIsYourName(firstName: String, lastName: String) {
 	fullName = $"{firstName} {lastName}";
