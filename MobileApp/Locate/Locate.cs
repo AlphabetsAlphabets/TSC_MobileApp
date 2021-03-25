@@ -104,6 +104,7 @@ namespace MobileApp
 
             for (int i = 0; i < names.Count; i++)
             {
+                // Two points in the client's shop
                 var origin = new Location(lat_one[i], lon_one[i]);
                 var end = new Location(lat_two[i], lon_two[i]);
 
@@ -116,10 +117,11 @@ namespace MobileApp
                 double mp_lon = (lon_one[i] + lon_two[i]) / 2;
 
                 var midpoint_of_shop = new Location(mp_lat, mp_lon);
-                var relative_distance_from_centre = Math.Abs(Location.CalculateDistance(user_coordinate, midpoint_of_shop, DistanceUnits.Kilometers));
-                if (relative_distance_from_centre <= radius)
+                var user_relative_distance_from_circle_centre = Math.Abs(Location.CalculateDistance(user_coordinate, midpoint_of_shop, DistanceUnits.Kilometers));
+                bool inCompound = (user_relative_distance_from_circle_centre <= radius);
+                if (inCompound)
                 {
-                    status = $"You are {relative_distance_from_centre * 1000} meters away from {names[i]}\nTolerance: {radius * 1000} meters";
+                    status = $"You are {user_relative_distance_from_circle_centre * 1000} meters away from {names[i]}\nTolerance: {radius * 1000} meters";
                     return status;
                 }
             }
