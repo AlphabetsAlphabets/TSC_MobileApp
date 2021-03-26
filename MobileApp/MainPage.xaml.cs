@@ -14,6 +14,8 @@ using Plugin.Media;
 using Plugin.Toast;
 using ZXing.Net.Mobile.Forms;
 using Android.Bluetooth;
+using Microsoft.Data.Sqlite;
+using Plugin.Media.Abstractions;
 
 namespace MobileApp
 {
@@ -56,7 +58,7 @@ namespace MobileApp
         /// </summary>
         /// <param name="sender">The button itself</param>
         /// <param name="e">What happens when you click a button</param>
-        private async void In_Area(object sender, EventArgs e) // Working w/Error handling & comments
+        private async void InArea(object sender, EventArgs e) // Working w/Error handling & comments
         {
             string status = await Locate.IsUserNearClientAsync(uri);
             await DisplayAlert("Status", status, "OK");
@@ -66,7 +68,7 @@ namespace MobileApp
         /// </summary>
         /// <param name="sender">The button itself</param>
         /// <param name="e">What happens when you click a button</param>
-        private async void Scan_QR_Code(object sender, EventArgs e) // Working w/Error handling & comments
+        private async void ScanQRCode(object sender, EventArgs e) // Working w/Error handling & comments
         {
             // Uses the scanner_page field defined at the start of the file.
             string qrValue = "";
@@ -99,12 +101,12 @@ namespace MobileApp
         /// </summary>
         /// <param name="sender">The button itself</param>
         /// <param name="e">What happens when you click a button</param>
-        private async void Establish_Connection(object sender, EventArgs e) // Working w/Error handling & comments
+        private async void EstablishConnection(object sender, EventArgs e) // Working w/Error handling & comments
         {
             // Connects to the local sqlite database
             try
             {
-                var connection = await Database.Connect(DbPath);
+                SqliteConnection connection = await Database.Connect(DbPath);
                 if (connection == null)
                 {
                     Debug.WriteLine("Connection not made.");
@@ -127,14 +129,14 @@ namespace MobileApp
         /// </summary>
         /// <param name="sender">The button itself</param>
         /// <param name="e">What happens when you click a button</param>
-        private async void Upload_Image(object sender, EventArgs e) // Working w/error handling & comments
+        private async void UploadImage(object sender, EventArgs e) // Working w/error handling & comments
         {
             // This requires the use of the api as well. Endpoint upload.
             Debug.WriteLine($"URI: {uri}");
 
             try
             {
-                var images = await FilePicker.PickMultipleAsync(new PickOptions
+                IEnumerable<FileResult> images = await FilePicker.PickMultipleAsync(new PickOptions
                 {
                     FileTypes = FilePickerFileType.Images,
                     PickerTitle = "Pick image(s)"
@@ -173,9 +175,9 @@ namespace MobileApp
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private async void Take_Picture(object sender, EventArgs e)
+        private async void TakePicture(object sender, EventArgs e)
         {
-            var file = await CrossMedia.Current.TakePhotoAsync(new Plugin.Media.Abstractions.StoreCameraMediaOptions
+            MediaFile file = await CrossMedia.Current.TakePhotoAsync(new StoreCameraMediaOptions
             {
                 SaveToAlbum = true
             });
@@ -189,15 +191,25 @@ namespace MobileApp
         /// </summary>
         /// <param name="sender">The button itself</param>
         /// <param name="e">What happens when you click a button</param>
-        private async void Print_Text(object sender, EventArgs e)
+        private async void PrintText(object sender, EventArgs e)
         {
-            var socket = await Printing.ConnectToPrinterAsync();
+            BluetoothSocket socket = await Printing.ConnectToPrinterAsync();
             if (socket == null) return;
 
-            var text_files = await Printing.SelectTextFilesAsync();
+            IEnumerable<FileResult> text_files = await Printing.SelectTextFilesAsync();
             if (text_files == null) return;
 
             await Printing.PrintTextFilesAsync(socket, text_files);
+            socket.Close();
+            socket.Dispose();
+        }
+
+        private async void PrintString(object sender, EventArgs e)
+        {
+            var socket = await Printing.ConnectToPrinterAsync();
+            if (socket == null) return;
+            string textToPrint = "Hello.";
+            await Printing.PrintStringAsync(socket, textToPrint);
         }
 
         /// <summary>
@@ -205,12 +217,12 @@ namespace MobileApp
         /// </summary>
         /// <param name="sender">The button itself</param>
         /// <param name="e">What happens when you click a button</param>
-        private async void Print_Images(object sender, EventArgs e)
+        private async void PrintImages(object sender, EventArgs e)
         {
-            var socket = await Printing.ConnectToPrinterAsync();
+            BluetoothSocket socket = await Printing.ConnectToPrinterAsync();
             if (socket == null) return;
 
-            var image_files = await Printing.SelectImageFilesAsync();
+            IEnumerable<FileResult> image_files = await Printing.SelectImageFilesAsync();
             if (image_files == null) return;
 
             await Printing.PrintImageFilesAsync(socket, image_files);
@@ -225,10 +237,10 @@ namespace MobileApp
         /// <param name="e">What happens when you click a button</param>
         private async void Test(object sender, EventArgs e)
         {
-            var socket = await Printing.ConnectToPrinterAsync();
+            BluetoothSocket socket = await Printing.ConnectToPrinterAsync();
             if (socket == null) return;
 
-            var image_files = await Printing.SelectImageFilesAsync();
+            IEnumerable<FileResult> image_files = await Printing.SelectImageFilesAsync();
             if (image_files == null) return;
 
             foreach (var image in image_files)

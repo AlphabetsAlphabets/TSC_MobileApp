@@ -19,7 +19,7 @@ public void double divide(x: int, y: int) {
 }
 ```
 When writing documentation for a function you must do the following (in order):
-1. Wrting a quick summary.
+1. Write a quick summary.
 2. List and explain the parameters (if there are any).
 3. specify the return type (if there is one).
 4. If there are exceptions, include them in exception tags.
@@ -36,7 +36,7 @@ public static class Printing
 ```
 
 ### Writing conventions
-This section details the language conventions of C# in terms of how to write C# code.  
+This section details the language conventions of C#  
 
 All functions, classes, exceptions, etc. Are **all** written in PascalCase
 ```csharp
@@ -46,7 +46,7 @@ class ThisIsAnExceptionClass: Exception {
 	}
 }
 ```
-while variables are written in either camelCase, or snake_case.
+while variables are written in either camelCase, or snake_case. 
 ```cs
 string firstName = "John"; // camelCase
 string last_name = "Doe"; // snake_case
@@ -56,6 +56,7 @@ public void WhatIsYourName(firstName: String, lastName: String) {
 	Console.WriteLine(fullName);
 }
 ```
+You can mix both camelCase and snake_case named variables together, but it's not advised, unless it makes the code more readable.
 
 And be sure to write code that is clear. And leave nothing ambiguous, comments help. This example is a snippet 
 from [Locate.cs](https://github.com/YJH16120/TSC_MobileApp/blob/master/MobileApp/Locate/Locate.cs).
@@ -80,10 +81,21 @@ This applies to `end` as well. You can tell that `diameter` is obtained from the
 
 And look at the comment, it tells you that I'm going get the midpoint. And the midpoint coordinate would be the value of `mp_lat`, and `mp_lon`. 
 
-Pay attention to how variables are named. It's very obvious that `user_relative_distance_from_circle_centre` is obviously
-the user's relative distance from the circle's centre. 
+Pay attention to how variables are named. It's very obvious that `user_relative_distance_from_circle_centre` is obviously the user's relative distance from the circle's centre. 
 
 There is absolutely no ambiguity about what each function is. Even if a variable isn't too clear, comments help clear things out.
 
 For more information please read from the offical microsoft [docs](https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/inside-a-program/coding-conventions)
+
+---
+# Creating multiple source files.
+At some point while developing a feature you may find yourself making either a very long [function](https://paste.rs/aRc.cs) (the code is from a very early `InArea` function). Or, you may find yourself creating multiple functions to split the tasks to make to make it more readable. You can see that it is very long. Furthermore, this function was going to be implemented with the `ScanQRCode` method, so the function body of `InArea` would be **added** to the body of the `ScanQRCode` method.
+
+Which is why I've split up the `InArea` function to [three]https://github.com/YJH16120/TSC_MobileApp/blob/master/MobileApp/Locate/Locate.cs) different functions: Obtaining the user's current location, making a HTTP request to the API to get our clients' location information. And finally the one where I use the information from the API response, and the user's location to calculate whether or not a user is in one of our client's shop.
+
+And those are the conditions to create a new source file. To recap:
+1. When a function's body gets too long, 
+2. or when you find yourself creating multiple 'sub-functions'.
+
+
 

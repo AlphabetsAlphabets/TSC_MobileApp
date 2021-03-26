@@ -42,7 +42,7 @@ namespace MobileApp
                 CrossToastPopUp.Current.ShowToastError("Bluetooth is not turned on.");
                 return null;
             }
-            var devices = adapter.BondedDevices;
+            ICollection<BluetoothDevice> devices = adapter.BondedDevices;
             BluetoothDevice printer = null;
             foreach(var device in devices)
             {
@@ -52,8 +52,8 @@ namespace MobileApp
                     break;
                 }
             }
-            var uuidOfPrinter = printer.GetUuids()[0].Uuid;
-            var _socket = printer.CreateRfcommSocketToServiceRecord(uuidOfPrinter);
+            Java.Util.UUID uuidOfPrinter = printer.GetUuids()[0].Uuid;
+            BluetoothSocket _socket = printer.CreateRfcommSocketToServiceRecord(uuidOfPrinter);
             try
             {
                 await _socket.ConnectAsync();
@@ -82,18 +82,17 @@ namespace MobileApp
         public static async Task<IEnumerable<FileResult>> SelectTextFilesAsync() // Working w/exceptions & comments
         {
             // To find out more about FileIO read: https://docs.microsoft.com/en-us/xamarin/essentials/file-picker?tabs=android
-            var customFileType =
-                new FilePickerFileType(new Dictionary<DevicePlatform, IEnumerable<string>>
-                {
-                    { DevicePlatform.Android, new[] { "text/*" } },
-                });
+            var customFileType = new FilePickerFileType(new Dictionary<DevicePlatform, IEnumerable<string>>
+            {
+                { DevicePlatform.Android, new[] { "text/*" } },
+            });
 
             var options = new PickOptions
             {
                 PickerTitle = "Please select text file(s)",
                 FileTypes = customFileType,
             };
-            var text_files = await FilePicker.PickMultipleAsync(options);
+            IEnumerable<FileResult> text_files = await FilePicker.PickMultipleAsync(options);
             if (text_files == null) return null; // The only time this is null is when the user explicitly cancels the operation. So no error message is needed.
 
             return text_files;
@@ -115,34 +114,42 @@ namespace MobileApp
                 /* A buffer is a byte array that is empty, but data will be written to it.
                    And the data that is written will be sent over to the bluetooth device. */
                 byte[] buffer = new byte[bufferSize * 2];
-                string centerAlignmentByteCode = "1A 5B 00";
-                //buffer[0] = Convert.ToByte("27");
-                //buffer[1] = Convert.ToByte("97");
-                //buffer[2] = Convert.ToByte("49");
-                try
-                {
-                    var byteCode = Encoding.ASCII.GetBytes(centerAlignmentByteCode);
-                    for (int i = 0; i < byteCode.Length; i++)
-                    {
-                        var code = byteCode[i];
-                        buffer[i] = code;
-                    };
-                }
-                catch (Exception byteException)
-                {
-                    Debug.WriteLine("BYTE EXCEPTION!");
-                    var message = byteException.Message;
-                    Debug.WriteLine($"Message: {message}");
-
-
-                    Debug.WriteLine("Can't convert to byte.");
-                    return;
-                }
-
                 await textFile.ReadAsync(buffer, 0, bufferSize); // Write data to buffer
+
+                var outletName = "SPEAKEASY BAR AND BRISTOL\n";
+
+                var invoiceNumber = 1234;
+                var invoice = $"INVOICE: {invoiceNumber}\n";
+
+                var RM = 123456789;
+
+                var finalInvoice = $"{outletName}{invoice}{RM}";
+                var invoiceInByte = Encoding.Unicode.GetBytes(finalInvoice);
+
+                var bound = 0;
+                var longer = invoiceInByte.Length > buffer.Length;
+                if (longer) bound = buffer.Length;
+                else bound = invoiceInByte.Length;
+
+                for (int i = bound; i<bound; i++)
+                {
+                    buffer[i] = invoiceInByte[i];
+                }
+
+                var length = invoiceInByte.Length;
+                buffer[length - 1] = 0x0A;
+                buffer[length - 2] = 0x0A;
+                buffer[length - 3] = 0x0A;
+                buffer[length - 4] = 0x0A;
+
                 try
                 {
-                    await _socket.OutputStream.WriteAsync(buffer, 0, buffer.Length); // This line is responsible for printing by sending data in buffer to the printer.
+                    var outputStream = _socket.OutputStream;
+                    using (var memStream = new MemoryStream())
+                    {
+                        
+                    }
+                    await outputStream.WriteAsync(buffer, 0, buffer.Length); // This line is responsible for printing by sending data in buffer to the printer.
                     buffer = null;
                 }
                 catch (Exception ex)
@@ -152,10 +159,47 @@ namespace MobileApp
                     return;
                 }
             }
-            _socket.Close();
-            _socket.Dispose();
         }
 
+        private static List<byte> GetHexOfChar(List<char> chars)
+        {
+            var hexCode = new List<byte>();
+            foreach(var ch in chars)
+            {
+                if (ch == '\n') {
+                    hexCode.Add(0x0A);
+                    continue;
+                }
+                var hex = BitConverter.ToString(new byte[] { Convert.ToByte(ch) });
+                var code = Convert.ToByte(hex);
+                hexCode.Add(code);
+            }
+            return hexCode;
+        }
+
+        private static void ModifyBuffer(byte[] buffer, List<byte> value, int startIndex)
+        {
+            for (int i=0; i<value.Count; i++)
+            {
+                var index = startIndex - 1 - i;
+                buffer[index] = value[i];
+            }
+        }
+
+        public static async Task PrintStringAsync(BluetoothSocket _socket, string text)
+        {
+            try
+            {
+                var buffer = Encoding.UTF8.GetBytes(text);
+                await _socket.OutputStream.WriteAsync(buffer, 0, buffer.Length);
+                buffer = null;
+            }
+            catch (Exception ex)
+            {
+                CrossToastPopUp.Current.ShowToastError(ex.Message);
+                return;
+            }
+        }
         /// <summary>
         /// Creates a new window that allows the user to select images. Used in <see cref="MainPage.Print_Images(object, EventArgs)"/>
         /// </summary>
@@ -190,10 +234,10 @@ namespace MobileApp
         { 
             foreach(var file in imageFiles) {
                 var path = file.FullPath;
-                var imageFile = File.Open(path, FileMode.Open, FileAccess.Read);
+                FileStream imageFile = File.Open(path, FileMode.Open, FileAccess.Read);
                 
                 Bitmap originalImage = await BitmapFactory.DecodeStreamAsync(imageFile);
-                var strippedImage = StripColor(originalImage); // Strips the image of ALL colour, and re-colourizes it all to black.
+                Bitmap strippedImage = StripColor(originalImage); // Strips the image of ALL colour, and re-colourizes it all to black.
 
                 using (var memStream = new MemoryStream()) {
                     int bufferLength = (int)imageFile.Length;

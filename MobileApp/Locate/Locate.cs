@@ -31,7 +31,7 @@ namespace MobileApp
         {
             try
             {
-                var apiResponse = await Request.Get_Location(uri);
+                Locale apiResponse = await Request.Get_Location(uri);
                 names = apiResponse.Name;
                 lat_one = apiResponse.Lat_One; lon_one = apiResponse.Lon_One;
                 lat_two = apiResponse.Lat_Two; lon_two = apiResponse.Lon_Two;
@@ -105,8 +105,8 @@ namespace MobileApp
             for (int i = 0; i < names.Count; i++)
             {
                 // Two points in the client's shop
-                var origin = new Location(lat_one[i], lon_one[i]);
-                var end = new Location(lat_two[i], lon_two[i]);
+                Location origin = new Location(lat_one[i], lon_one[i]);
+                Location end = new Location(lat_two[i], lon_two[i]);
 
                 // Gets the diameter, then the radius from it.
                 double diameter = Math.Abs(Location.CalculateDistance(origin, end, DistanceUnits.Kilometers));
@@ -116,8 +116,8 @@ namespace MobileApp
                 double mp_lat = (lat_one[i] + lat_two[i]) / 2;
                 double mp_lon = (lon_one[i] + lon_two[i]) / 2;
 
-                var midpoint_of_shop = new Location(mp_lat, mp_lon);
-                var user_relative_distance_from_circle_centre = Math.Abs(Location.CalculateDistance(user_coordinate, midpoint_of_shop, DistanceUnits.Kilometers));
+                Location midpoint_of_shop = new Location(mp_lat, mp_lon);
+                double user_relative_distance_from_circle_centre = Math.Abs(Location.CalculateDistance(user_coordinate, midpoint_of_shop, DistanceUnits.Kilometers));
                 bool inCompound = (user_relative_distance_from_circle_centre <= radius);
                 if (inCompound)
                 {
