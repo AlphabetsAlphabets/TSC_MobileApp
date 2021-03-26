@@ -116,41 +116,30 @@ namespace MobileApp
                 byte[] buffer = new byte[bufferSize * 2];
                 await textFile.ReadAsync(buffer, 0, bufferSize); // Write data to buffer
 
-                var outletName = "SPEAKEASY BAR AND BRISTOL\n";
+                await _socket.OutputStream.WriteAsync(buffer, 0, buffer.Length); // This line is responsible for printing by sending data in buffer to the printer.
+                buffer = null;
+
+                var outletName = "\nSPEAKEASY BAR AND BRISTOL\n";
 
                 var invoiceNumber = 1234;
                 var invoice = $"INVOICE: {invoiceNumber}\n";
 
                 var RM = 123456789;
 
-                var finalInvoice = $"{outletName}{invoice}{RM}";
+                var finalInvoice = $"{outletName}{invoice}RM:{RM}\n";
                 var invoiceInByte = Encoding.Unicode.GetBytes(finalInvoice);
 
-                var bound = 0;
-                var longer = invoiceInByte.Length > buffer.Length;
-                if (longer) bound = buffer.Length;
-                else bound = invoiceInByte.Length;
-
-                for (int i = bound; i<bound; i++)
-                {
-                    buffer[i] = invoiceInByte[i];
-                }
-
-                var length = invoiceInByte.Length;
-                buffer[length - 1] = 0x0A;
-                buffer[length - 2] = 0x0A;
-                buffer[length - 3] = 0x0A;
-                buffer[length - 4] = 0x0A;
 
                 try
                 {
                     var outputStream = _socket.OutputStream;
-                    using (var memStream = new MemoryStream())
+                    using (var memStream = new MemoryStream(invoiceInByte, true))
                     {
-                        
+                        await memStream.WriteAsync(invoiceInByte, 0, invoiceInByte.Length);
+                        var buf = memStream.ToArray();
+                        await outputStream.WriteAsync(buf, 0, buf.Length);
+                        buf = null;
                     }
-                    await outputStream.WriteAsync(buffer, 0, buffer.Length); // This line is responsible for printing by sending data in buffer to the printer.
-                    buffer = null;
                 }
                 catch (Exception ex)
                 {
@@ -158,31 +147,6 @@ namespace MobileApp
                     buffer = null;
                     return;
                 }
-            }
-        }
-
-        private static List<byte> GetHexOfChar(List<char> chars)
-        {
-            var hexCode = new List<byte>();
-            foreach(var ch in chars)
-            {
-                if (ch == '\n') {
-                    hexCode.Add(0x0A);
-                    continue;
-                }
-                var hex = BitConverter.ToString(new byte[] { Convert.ToByte(ch) });
-                var code = Convert.ToByte(hex);
-                hexCode.Add(code);
-            }
-            return hexCode;
-        }
-
-        private static void ModifyBuffer(byte[] buffer, List<byte> value, int startIndex)
-        {
-            for (int i=0; i<value.Count; i++)
-            {
-                var index = startIndex - 1 - i;
-                buffer[index] = value[i];
             }
         }
 
