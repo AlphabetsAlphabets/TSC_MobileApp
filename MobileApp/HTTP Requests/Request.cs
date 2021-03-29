@@ -74,5 +74,14 @@ namespace MobileApp
 
             return apiResponse;
         }
+
+        public static FirstTimeSetup FTS(string uri)
+        {
+            client.BaseUrl = new Uri(uri);
+            var request = new RestRequest("fts", DataFormat.Json);
+            var apiResponse = client.Get<FirstTimeSetup>(request).Data;
+
+            return apiResponse;
+        }
     }
 }

@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="MobileApp.PrintPage">
+    <ContentPage.Content>
+        <StackLayout>
+            <Label Text="Issue a receipt"
+                VerticalOptions="CenterAndExpand" 
+                HorizontalOptions="CenterAndExpand"
+                FontAttributes="Bold" FontSize="Title" TranslationY="-180"/>
+
+            <Entry x:Name="outlet" HorizontalOptions="Fill" TranslationY="-320"
+                   Placeholder="Outlet name"/>
+
+            <Entry x:Name="invoice" HorizontalOptions="Fill" TranslationY="-325"
+                   Placeholder="Invoice number"/>
+
+            <Entry x:Name="runNum" HorizontalOptions="Fill" TranslationY="-330"
+                   Placeholder="Running number"/>
+
+            <!--<Button Text="Issue receipt" HorizontalOptions="FillAndExpand" VerticalOptions="Center"
+                    TranslationY="-300" Clicked="IssueReceipt"/>-->
+
+            <Button Text="Print" Clicked="IssueReceipt" HorizontalOptions="FillAndExpand"/>
+        </StackLayout>
+    </ContentPage.Content>
+</ContentPage>

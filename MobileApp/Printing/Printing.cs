@@ -11,6 +11,11 @@ using Xamarin.Essentials;
 using Plugin.Toast;
 using System.Diagnostics;
 
+// Printing
+using ESCPOS_NET;
+using ESCPOS_NET.Emitters;
+using ESCPOS_NET.Utilities;
+
 namespace MobileApp
 {
     /// <summary>
@@ -19,6 +24,9 @@ namespace MobileApp
     public static class Printing
     {
         /*
+        TODO: 
+        1. Combine print text and print images. 
+
         NOTE:
         This only works on an android device, and does not work on an iOS device.
 
@@ -34,7 +42,7 @@ namespace MobileApp
         /// </summary>
         /// <returns>BluetoothSocket</returns>
         /// <exception cref="Java.IO.IOException">Thrown when attempting to connect to a bluetooth capable device that isn't turned on.</exception>
-        public static async Task<BluetoothSocket> ConnectToPrinterAsync()
+        public static BluetoothSocket ConnectToPrinter()
         {
             BluetoothAdapter adapter = BluetoothAdapter.DefaultAdapter;
             if(adapter == null || !adapter.IsEnabled)
@@ -42,21 +50,28 @@ namespace MobileApp
                 CrossToastPopUp.Current.ShowToastError("Bluetooth is not turned on.");
                 return null;
             }
+
             ICollection<BluetoothDevice> devices = adapter.BondedDevices;
             BluetoothDevice printer = null;
             foreach(var device in devices)
             {
-                if (device.Name == "MTP-2")
+                if (device.Name == "V2")
                 {
                     printer = device;
                     break;
                 }
             }
+
+            if (printer == null)
+            {
+                CrossToastPopUp.Current.ShowToastError("You are not paired to the device.");
+                return null;
+            }
             Java.Util.UUID uuidOfPrinter = printer.GetUuids()[0].Uuid;
             BluetoothSocket _socket = printer.CreateRfcommSocketToServiceRecord(uuidOfPrinter);
             try
             {
-                await _socket.ConnectAsync();
+                _socket.Connect();
             }
             catch (Java.IO.IOException ioEx)
             {
@@ -64,6 +79,7 @@ namespace MobileApp
                 CrossToastPopUp.Current.ShowToastError(status);
                 return null;
             }
+
             var isConnected = _socket.IsConnected;
             if (!isConnected)
             {
@@ -104,8 +120,10 @@ namespace MobileApp
         /// <param name="_socket">BluetoothSocket</param>
         /// <param name="text_files">IEnumerable of FileResults</param>
         /// <exception cref="Exception">Occurs whenever there is any exception</exception>
-        public static async Task PrintTextFilesAsync(BluetoothSocket _socket, IEnumerable<FileResult> textFiles) { 
-            foreach(var file in textFiles) {
+        public static async Task PrintTextFilesAsync(BluetoothSocket _socket, IEnumerable<FileResult> textFiles) {
+            // Don't read from file, everything that is predefined will be stored in memory.
+            EPSON ep = new EPSON();
+            foreach (var file in textFiles) {
                 var path = file.FullPath;
                 var textFile = File.Open(path, FileMode.Open, FileAccess.Read);
 
@@ -113,50 +131,98 @@ namespace MobileApp
 
                 /* A buffer is a byte array that is empty, but data will be written to it.
                    And the data that is written will be sent over to the bluetooth device. */
-                byte[] buffer = new byte[bufferSize * 2];
+                byte[] buffer = new byte[bufferSize];
                 await textFile.ReadAsync(buffer, 0, bufferSize); // Write data to buffer
 
-                await _socket.OutputStream.WriteAsync(buffer, 0, buffer.Length); // This line is responsible for printing by sending data in buffer to the printer.
+                // printing text from file
+                var outputStream = _socket.OutputStream;
+                await outputStream.WriteAsync(buffer, 0, buffer.Length); // This line is responsible for printing by sending data in buffer to the printer.
                 buffer = null;
 
-                var outletName = "\nSPEAKEASY BAR AND BRISTOL\n";
-
-                var invoiceNumber = 1234;
-                var invoice = $"INVOICE: {invoiceNumber}\n";
-
+                // Setup invoice, eventually this will be dynamic.
+                var outletName = "SPEAKEASY BAR AND BRISTOL";
+                var invoice = $"INVOICE: 123456";
                 var RM = 123456789;
 
-                var finalInvoice = $"{outletName}{invoice}RM:{RM}\n";
-                var invoiceInByte = Encoding.Unicode.GetBytes(finalInvoice);
+                // Get the company logo
+                var logoPath = MainPage.root + "logo.png";
+                var logo = File.ReadAllBytes(logoPath);
+
+                // Setup printing here, api provided by: https://github.com/lukevp/ESC-POS-.NET
+                byte[] centerCode = ByteSplicer.Combine(
+                    ep.PrintImage(logo, false, true, 372, color: 0),
+                    ep.CenterAlign(),
+                    ep.SetStyles(PrintStyle.DoubleWidth),
+                    ep.SetStyles(PrintStyle.DoubleHeight),
+                    ep.SetStyles(PrintStyle.DoubleHeight),
+                    ep.PrintLine("============================="),
+                    ep.PrintLine("|| TONG SAN CHAN SDN. BHD. ||"),
+                    ep.PrintLine("============================="),
+                    ep.SetStyles(PrintStyle.None),
+                    ep.CenterAlign(),
+                    ep.SetStyles(PrintStyle.Bold),
+                    ep.PrintLine($"OUTLET: {outletName}"),
+                    ep.SetStyles(PrintStyle.None),
+                    ep.LeftAlign(),
+                    ep.PrintLine(invoice),
+                    ep.PrintLine($"RM: {RM}"),
+                    ep.CenterAlign(),
+                    ep.PrintLine("----------"),
+                    ep.PrintLine("Thank you.")
+                );
 
 
                 try
                 {
-                    var outputStream = _socket.OutputStream;
-                    using (var memStream = new MemoryStream(invoiceInByte, true))
-                    {
-                        await memStream.WriteAsync(invoiceInByte, 0, invoiceInByte.Length);
-                        var buf = memStream.ToArray();
-                        await outputStream.WriteAsync(buf, 0, buf.Length);
-                        buf = null;
-                    }
+                    // Printing out custom text.
+                    await outputStream.WriteAsync(centerCode, 0, centerCode.Length);
                 }
                 catch (Exception ex)
                 {
                     CrossToastPopUp.Current.ShowToastError(ex.Message);
                     buffer = null;
+                    _socket.Close();
                     return;
                 }
             }
         }
 
-        public static async Task PrintStringAsync(BluetoothSocket _socket, string text)
+        public static async Task PrintStringAsync(BluetoothSocket _socket, Dictionary<string, string> text)
         {
             try
             {
-                var buffer = Encoding.UTF8.GetBytes(text);
-                await _socket.OutputStream.WriteAsync(buffer, 0, buffer.Length);
+                var file = File.Open(MainPage.root + "test.txt", FileMode.Open, FileAccess.Read);
+                byte[] buffer = new byte[(int)file.Length];
+                await file.ReadAsync(buffer, 0, (int)file.Length);
+
+                var stream = _socket.OutputStream;
+                await stream.WriteAsync(buffer, 0, buffer.Length);
                 buffer = null;
+
+                EPSON ep = new EPSON();
+                var logoPath = MainPage.root + "logo.png";
+                var logo = File.ReadAllBytes(logoPath);
+
+                buffer = ByteSplicer.Combine(
+                    ep.PrintImage(logo, true, true, 372, color: 0),
+                    ep.CenterAlign(),
+                    ep.SetStyles(PrintStyle.Underline),
+                    ep.SetStyles(PrintStyle.DoubleHeight),
+                    ep.PrintLine($"OUTLET: {text["outlet"]}"),
+                    ep.SetStyles(PrintStyle.None),
+                    ep.LeftAlign(),
+                    ep.PrintLine($"Invoice number: {text["invoice"]}"),
+                    ep.PrintLine($"Running number: {text["runNum"]}"),
+                    ep.FeedLines(2),
+                    ep.CenterAlign(),
+                    ep.PrintLine("Tel: 012-356-6789"),
+                    ep.PrintLine("E-mail: email@provider.com"),
+                    ep.FeedLines(4)
+                );
+                await stream.WriteAsync(buffer, 0, buffer.Length);
+                buffer = null;
+                file.Close();
+                file.Dispose();
             }
             catch (Exception ex)
             {
@@ -232,22 +298,17 @@ namespace MobileApp
 
         public static async Task PrintImageFilesAsync(String path, BluetoothSocket _socket)
         {
+            var ep = new EPSON();
             try
             {
-                var imageFile = File.Open(path, FileMode.Open, FileAccess.Read);
-                int bufferLength = (int)imageFile.Length;
-                var buffer = new byte[bufferLength];
+                var buffer = ByteSplicer.Combine(
+                    ep.CenterAlign(),
+                    ep.PrintLine("IMAGE"),
+                    ep.PrintImage(File.ReadAllBytes(path), false, true, 372, color: 0)
+                );
 
-                var originalImage = await BitmapFactory.DecodeFileAsync(path);
-                var strippedImage = StripColor(originalImage);
-
-                using (var memStream = new MemoryStream())
-                {
-                    await strippedImage.CompressAsync(Bitmap.CompressFormat.Png, 0, memStream);
-                    buffer = memStream.ToArray(); 
-
-                    await _socket.OutputStream.WriteAsync(buffer, 0, buffer.Length);
-                }
+                var outputStream = _socket.OutputStream;
+                await outputStream.WriteAsync(buffer, 0, buffer.Length);
             } catch (Exception ex)
             {
                 Debug.WriteLine($"Error: {ex}\n\n{ex.Message}");

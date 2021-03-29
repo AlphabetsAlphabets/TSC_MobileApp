@@ -56,6 +56,13 @@ namespace MobileApp
         public List<double> Lon_Two { get; set; }
     }
 
+    [Serializable]
+    public class FirstTimeSetup
+    {
+        [JsonProperty("image")]
+        public List<int> Image { get; set; }
+    }
+
     /// <summary>
     /// This exception will throw when a request is not made successfully.
     /// See <see cref="MainPage.Upload_Image(object, EventArgs)"/>

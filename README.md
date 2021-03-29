@@ -1,6 +1,7 @@
 ﻿# Table of contents
 Topic | description |
 --- | --- |
+|[To-do list](https://github.com/YJH16120/TSC_MobileApp#To-do-list) | List of things that need to be implemented. |
 |[How to write documentation](https://github.com/YJH16120/TSC_MobileApp#Writing-documentation) | Explains in detail how to write documentation |
 |[Writing conventions](https://github.com/YJH16120/TSC_MobileApp#Writing-conventions) | Writing code that complies to the C# language standard |
 
@@ -97,5 +98,17 @@ And those are the conditions to create a new source file. To recap:
 1. When a function's body gets too long, 
 2. or when you find yourself creating multiple 'sub-functions'.
 
+---
+# To-do list
+These can all be done out of order.
 
+- Print operations
+    - [x] Merge the print images, and print text. Into one function to be able to print a receipt.
+	- [x] Find a way to get users to enter information for the invoice.
+	- [x] Print images and text in the same function.
+	- [ ] Get the outlet's name through the location api, via the functions for geolocation.
 
+- Configure first time startups:
+	- [ ] Automaitcally download TSC logo with the use of the api.
+	- [ ] Create an offline database.
+    - [ ] Create a dummy file for printing if the file doesn't already exist.

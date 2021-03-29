@@ -1,6 +1,8 @@
 ﻿// std
 using System;
+using System.IO;
 using System.Threading;
+using System.Linq;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Collections.Generic;
@@ -19,6 +21,11 @@ using Plugin.Media.Abstractions;
 
 namespace MobileApp
 {
+    /*
+    TODO:
+        1. Offline DB
+        
+     */
     // IOS, Android, cross platform.
     // Put debtor code into QR
     // Log current location when you take an image
@@ -37,19 +44,31 @@ namespace MobileApp
         }; // Needed for the QR Code scanner
 
         // If you want to save any files make sure you do it within the root of the mobile app
-        public static string root = @"/storage/emulated/0/Android/Data/com.MobileApp/files/";
+        public static string root = @"/storage/emulated/0/Android/data/com.MobileApp/files/";
 
         public string DbPath = @"/storage/emulated/0/Android/Data/com.MobileApp/files/employee.db"; // The user's information
 
         // Temporary fields, will be removed once a static IP is set.
-        public static string iPv4 = "192.168.1.137"; // Dynamic IP
+        public static string iPv4 = "192.168.1.136"; // Dynamic IP
         public static string uri = $"http://{iPv4}:5000/"; // Fully constructed IP
-
-        public static BluetoothSocket socket = null;
 
         public MainPage()
         {
             InitializeComponent();
+            FirstTimeSetup();
+        }
+
+        public static void FirstTimeSetup()
+        {
+            /*
+             TODO:
+                1. Download the company logo for the user if it's the user's first time.
+                2. Create a dummy file for print operations.
+             */
+            bool fileExists = File.Exists(MainPage.root + "test.txt");
+            if (!fileExists) File.WriteAllText(MainPage.root + "test.txt", "\nHello\n");
+
+            return;
         }
 
         /// <summary>
@@ -63,6 +82,7 @@ namespace MobileApp
             string status = await Locate.IsUserNearClientAsync(uri);
             await DisplayAlert("Status", status, "OK");
         }
+
         /// <summary>
         /// Scans the QR code, and checks the user's current location to see if the user is in a client's shop.
         /// </summary>
@@ -96,6 +116,7 @@ namespace MobileApp
                 CrossToastPopUp.Current.ShowToastError(ex.Message);
             }
         }
+
         /// <summary>
         /// Connects to the SQLITE3 database
         /// </summary>
@@ -124,6 +145,7 @@ namespace MobileApp
                 CrossToastPopUp.Current.ShowToastError(ex.Message + $"Error: {ex}");
             }
         }
+
         /// <summary>
         /// Uploads an image to the server through the API.
         /// </summary>
@@ -170,6 +192,7 @@ namespace MobileApp
                 CrossToastPopUp.Current.ShowToastError($"{ex.Message}\nError: {ex}");
             }
         }
+
         /// <summary>
         /// Takes an image
         /// </summary>
@@ -193,69 +216,15 @@ namespace MobileApp
         /// <param name="e">What happens when you click a button</param>
         private async void PrintText(object sender, EventArgs e)
         {
-            BluetoothSocket socket = await Printing.ConnectToPrinterAsync();
-            if (socket == null) return;
+            await Navigation.PushModalAsync(new PrintPage());
+            //BluetoothSocket socket = Printing.ConnectToPrinter();
+            //if (socket == null) return;
 
-            IEnumerable<FileResult> text_files = await Printing.SelectTextFilesAsync();
-            if (text_files == null) return;
+            //IEnumerable<FileResult> text_files = await Printing.SelectTextFilesAsync();
+            //if (text_files == null) return;
 
-            await Printing.PrintTextFilesAsync(socket, text_files);
-            socket.Close();
-            socket.Dispose();
-        }
-
-        private async void PrintString(object sender, EventArgs e)
-        {
-            var socket = await Printing.ConnectToPrinterAsync();
-            if (socket == null) return;
-            string textToPrint = "Hello.";
-            await Printing.PrintStringAsync(socket, textToPrint);
-        }
-
-        /// <summary>
-        /// Prints an image. (Doesn't work)
-        /// </summary>
-        /// <param name="sender">The button itself</param>
-        /// <param name="e">What happens when you click a button</param>
-        private async void PrintImages(object sender, EventArgs e)
-        {
-            BluetoothSocket socket = await Printing.ConnectToPrinterAsync();
-            if (socket == null) return;
-
-            IEnumerable<FileResult> image_files = await Printing.SelectImageFilesAsync();
-            if (image_files == null) return;
-
-            await Printing.PrintImageFilesAsync(socket, image_files);
-            
-            socket.Close();
-            socket.Dispose();
-        }
-        /// <summary>
-        /// Testing purposes only. For when you want to workshop something, and to not modify existing code.
-        /// </summary>
-        /// <param name="sender">The button itself</param>
-        /// <param name="e">What happens when you click a button</param>
-        private async void Test(object sender, EventArgs e)
-        {
-            BluetoothSocket socket = await Printing.ConnectToPrinterAsync();
-            if (socket == null) return;
-
-            IEnumerable<FileResult> image_files = await Printing.SelectImageFilesAsync();
-            if (image_files == null) return;
-
-            foreach (var image in image_files)
-            {
-                var path = image.FullPath;
-                await Printing.PrintImageFilesAsync(path, socket);
-            }
-
-            var status = "Print job completed.";
-            Debug.WriteLine(status);
-            CrossToastPopUp.Current.ShowToastMessage(status);
-
-            socket.Close();
-            socket.Dispose();
-
+            //await Printing.PrintTextFilesAsync(socket, text_files);
+            //socket.Close();
         }
     }
 }
