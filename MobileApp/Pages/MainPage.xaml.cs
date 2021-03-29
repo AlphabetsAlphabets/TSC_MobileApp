@@ -66,7 +66,8 @@ namespace MobileApp
                 2. Create a dummy file for print operations.
              */
             bool fileExists = File.Exists(MainPage.root + "print.txt");
-            if (!fileExists) File.WriteAllText(MainPage.root + "print.txt", $"\n{new string('=', 25)}\n");
+            var seperator = new string('=', 25);
+            if (!fileExists) File.WriteAllText(MainPage.root + "print.txt", $"\n{seperator}\n");
 
             return;
         }
