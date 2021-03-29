@@ -65,8 +65,8 @@ namespace MobileApp
                 1. Download the company logo for the user if it's the user's first time.
                 2. Create a dummy file for print operations.
              */
-            bool fileExists = File.Exists(MainPage.root + "test.txt");
-            if (!fileExists) File.WriteAllText(MainPage.root + "test.txt", "\nHello\n");
+            bool fileExists = File.Exists(MainPage.root + "print.txt");
+            if (!fileExists) File.WriteAllText(MainPage.root + "print.txt", $"\n{new string('=', 25)}\n");
 
             return;
         }

@@ -40,18 +40,5 @@ namespace MobileApp
             socket.Close();
             socket.Dispose();
         }
-
-        private async void PrintTest(object sender, EventArgs e)
-        {
-            BluetoothSocket socket = Printing.ConnectToPrinter();
-            if (socket == null) return;
-
-            var textFiles = await Printing.SelectTextFilesAsync();
-            if (textFiles == null) return;
-
-            await Printing.PrintTextFilesAsync(socket, textFiles);
-            socket.Close();
-            socket.Dispose();
-        }
     }
 }
