@@ -103,7 +103,7 @@ And those are the conditions to create a new source file. To recap:
 These can all be done out of order.
 
 - Print operations
-	:white_check_mark: Merge the print images, and print text. Into one function to be able to print a receipt.
+	- :white_check_mark: Merge the print images, and print text. Into one function to be able to print a receipt.
 	- [x] Find a way to get users to enter information for the invoice.
 	- [x] Print images and text in the same function.
 	- [x] Get the outlet's name through the location api, via the functions for geolocation. 
