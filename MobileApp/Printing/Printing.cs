@@ -64,7 +64,8 @@ namespace MobileApp
 
             if (printer == null)
             {
-                CrossToastPopUp.Current.ShowToastError("You are not paired to the device.");
+                var status = "This device is not paired to the device. Both the printer, and your device must be connected to each other.";
+                CrossToastPopUp.Current.ShowToastError(status);
                 return null;
             }
             Java.Util.UUID uuidOfPrinter = printer.GetUuids()[0].Uuid;
@@ -213,6 +214,7 @@ namespace MobileApp
                     ep.LeftAlign(),
                     ep.PrintLine($"Invoice number: {text["invoice"]}"),
                     ep.PrintLine($"Running number: {text["runNum"]}"),
+                    ep.PrintLine($"Issued on: {DateTime.Now}"),
                     ep.FeedLines(2),
                     ep.CenterAlign(),
                     ep.PrintLine("Tel: 012-356-6789"),

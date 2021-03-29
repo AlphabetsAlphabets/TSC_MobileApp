@@ -18,10 +18,8 @@
             <Entry x:Name="runNum" HorizontalOptions="Fill" TranslationY="-330"
                    Placeholder="Running number"/>
 
-            <!--<Button Text="Issue receipt" HorizontalOptions="FillAndExpand" VerticalOptions="Center"
-                    TranslationY="-300" Clicked="IssueReceipt"/>-->
-
-            <Button Text="Print" Clicked="IssueReceipt" HorizontalOptions="FillAndExpand"/>
+            <Button Text="Issue receipt" HorizontalOptions="FillAndExpand" VerticalOptions="Center"
+                    TranslationY="-300" Clicked="IssueReceipt"/>
         </StackLayout>
     </ContentPage.Content>
 </ContentPage>
