@@ -100,15 +100,20 @@ And those are the conditions to create a new source file. To recap:
 
 ---
 # To-do list
-These can all be done out of order.
+These can all be done out of order. [Formatting guide](https://github.com/caiyongji/emoji-list#symbols).
 
-- Print operations
-	- :white_check_mark: Merge the print images, and print text. Into one function to be able to print a receipt.
-	- [x] Find a way to get users to enter information for the invoice.
-	- [x] Print images and text in the same function.
-	- [x] Get the outlet's name through the location api, via the functions for geolocation. 
+- :white_check_mark: Completed/Done
+- :x: Not completed/not done.
 
-- Configure first time startups:
-	- [ ] Automaitcally download TSC logo with the use of the api.
-	- [ ] Create an offline database.
-    - [ ] Create a dummy file for printing if the file doesn't already exist.
+Print operations | status |
+---------------- | ------ |
+ Merge the print images, and print text. Into one function to be able to print a receipt. | :white_check_mark: |
+ Find a way to get users to enter information for the invoice. | :white_check_mark: |
+ Print images and text in the same function. | :white_check_mark: |
+ Get the outlet's name through the location api, via the functions for geolocation. | :white_check_mark: |
+
+Configure first time startups | status |
+----------------------------- | ------ |
+Automaitcally download TSC logo with the use of the api. | :x:
+Create an offline database. | :x:
+Create a dummy file for printing if the file doesn't already exist. | :white_check_mark:
