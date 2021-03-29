@@ -26,11 +26,6 @@ namespace MobileApp
         1. Offline DB
         
      */
-    // IOS, Android, cross platform.
-    // Put debtor code into QR
-    // Log current location when you take an image
-    // Increase the radius by 10 - 20% from phone's point
-
     /// <summary>
     /// This file hosts the call backs for MainPage.xaml
     /// </summary>
@@ -74,7 +69,7 @@ namespace MobileApp
 
         /// <summary>
         /// This function will determine whether or not a user is in a client's shop. 
-        /// The way this is calculated is in the <see cref="Locate"/> class.
+        /// The way this is calculated is in the <see cref="Locate">Locate</see> class.
         /// </summary>
         /// <param name="sender">The button itself</param>
         /// <param name="e">What happens when you click a button</param>

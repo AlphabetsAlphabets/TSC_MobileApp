@@ -84,9 +84,9 @@ namespace MobileApp
             }
         }
         /// <summary>
-        /// Checks whether or not a person is in a client's shop
+        /// Checks whether or not a person is in a client's shop. A HTTP GET request is made to the api. 
         /// </summary>
-        /// <param name="uri">The request URI, defined in <seealso cref="MainPage.uri"/></param>
+        /// <param name="uri">The request URI</param>
         /// <returns></returns>
         public static async Task<String> IsUserNearClientAsync(string uri)
         {
