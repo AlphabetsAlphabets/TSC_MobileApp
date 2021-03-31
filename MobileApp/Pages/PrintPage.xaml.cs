@@ -33,10 +33,11 @@ namespace MobileApp
                 { "runNum", runningNumber}
             };
 
-            BluetoothSocket socket = Printing.ConnectToPrinter();
+            var printer = new Printing(3000, 1000);
+            BluetoothSocket socket = printer.ConnectToPrinter();
             if (socket == null) return;
 
-            await Printing.PrintStringAsync(socket, text);
+            await printer.PrintStringAsync(socket, text);
             socket.Close();
             socket.Dispose();
         }

@@ -44,7 +44,7 @@ namespace MobileApp
         public string DbPath = @"/storage/emulated/0/Android/Data/com.MobileApp/files/employee.db"; // The user's information
 
         // Temporary fields, will be removed once a static IP is set.
-        public static string iPv4 = "192.168.1.136"; // Dynamic IP
+        public static string iPv4 = "192.168.1.143"; // Dynamic IP
         public static string uri = $"http://{iPv4}:5000/"; // Fully constructed IP
 
         public MainPage()
@@ -61,7 +61,7 @@ namespace MobileApp
                 2. Create a dummy file for print operations.
              */
             bool fileExists = File.Exists(MainPage.root + "print.txt");
-            var seperator = new string('=', 25);
+            var seperator = new string('=', 32);
             if (!fileExists) File.WriteAllText(MainPage.root + "print.txt", $"\n{seperator}\n");
 
             return;

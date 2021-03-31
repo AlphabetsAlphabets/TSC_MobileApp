@@ -1,49 +1,61 @@
 ﻿using System;
 using System.IO;
-using System.Text;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 
-using Android.Graphics;
 using Android.Bluetooth;
-using Xamarin.Essentials;
 
 using Plugin.Toast;
-using System.Diagnostics;
 
 // Printing
-using ESCPOS_NET;
 using ESCPOS_NET.Emitters;
 using ESCPOS_NET.Utilities;
+using Android.OS;
+using System.Threading;
+using Android.Graphics.Drawables;
+using Android.Content.Res;
+using Android.Content;
 
 namespace MobileApp
 {
+
+
     /// <summary>
     /// This class is host to functions that are related to print job operations.
     /// </summary>
-    public static class Printing
+    public class Printing : CountDownTimer
     {
-        /*
-        TODO: 
-        1. Combine print text and print images. 
+        public Task ConnectTask { get; private set; }
+        public CancellationTokenSource Token { get; } = new CancellationTokenSource();
+        // Note: This only works on an Android device.
 
-        NOTE:
-        This only works on an android device, and does not work on an iOS device.
-
-        Connets to a Bluetooth printer called MTP-2, and prints stuff.
-        Current the printer's name is MTP-2, it will be changed in the future,
-        where the user gets to choose which device is the printer.
-        
-        It is possible to print images.
+        /* This is for setting timeout. Read more:
+         * 1. https://docs.microsoft.com/en-us/dotnet/api/android.os.countdowntimer?view=xamarin-android-sdk-9
+           2. https://developer.android.com/reference/android/os/CountDownTimer
         */
+        public Printing(long millisInFuture, long countDownInterval) : base(millisInFuture, countDownInterval)
+        {
+
+        }
+
+        public override void OnFinish()
+        {
+            System.Diagnostics.Debug.WriteLine("ON FINISH!");
+        }
+
+        public override void OnTick(long millisUntilFinished)
+        {
+        }
 
         /// <summary>
-        /// Connects to the bluetooth printer named MTP-2
+        /// Connects to the bluetooth printer
         /// </summary>
         /// <returns>BluetoothSocket</returns>
         /// <exception cref="Java.IO.IOException">Thrown when attempting to connect to a bluetooth capable device that isn't turned on.</exception>
-        public static BluetoothSocket ConnectToPrinter()
+        public BluetoothSocket ConnectToPrinter()
         {
+            string status = "";
             BluetoothAdapter adapter = BluetoothAdapter.DefaultAdapter;
             if (adapter == null || !adapter.IsEnabled)
             {
@@ -51,54 +63,91 @@ namespace MobileApp
                 return null;
             }
 
+
             ICollection<BluetoothDevice> devices = adapter.BondedDevices;
             BluetoothDevice printer = null;
+            BluetoothSocket _socket = null;
+            Java.Util.UUID uuidOfPrinter = null;
             foreach (var device in devices)
             {
-                if (device.Name == "V2")
+                printer = device;
+                var res = printer.FetchUuidsWithSdp();
+                ParcelUuid[] uuid = printer.GetUuids();
+                if (uuid == null && device.Name == "InnerPrinter")
                 {
-                    printer = device;
-                    break;
+                    Java.Util.UUID innerPrinterUuid = Java.Util.UUID.FromString("00001101-0000-1000-8000-00805f9b34fb");
+                    _socket = printer.CreateRfcommSocketToServiceRecord(innerPrinterUuid);
+                    _socket.Connect();
+
+                    return _socket;
+                }
+                else continue;
+                uuidOfPrinter = uuid[0].Uuid;
+                _socket = printer.CreateRfcommSocketToServiceRecord(uuidOfPrinter);
+                var outStream = _socket.OutputStream;
+                var inStream = _socket.InputStream;
+
+                bool canTimeout = outStream.CanTimeout;
+                if (canTimeout) outStream.WriteTimeout = 3000;
+
+                /*
+                To tell if a BT device is a printer it must have a stream that you can write to, but a stream that you cannot read from.
+                It's UUID must match the generic UUID of ALL BT printers, the generic UUID being: 00001101-0000-1000-8000-00805f9b34fb
+                */
+                var isWritable = outStream.CanWrite;
+                var isReadable = outStream.CanRead;
+
+                var isInStreamWritable = inStream.CanWrite;
+
+
+                // Evaluates to true if the stream is writable but not readable, and that the input stream is also not writable
+                var canWriteButNotRead = (isWritable && !isReadable && !isInStreamWritable);
+
+                // Evaluates to true if the device has the generic UUID of a printer.
+                var hasGenericUuidOfPrinter = (uuidOfPrinter.ToString() == "00001101-0000-1000-8000-00805f9b34fb");
+
+                var deviceIsPrinter = (canWriteButNotRead && hasGenericUuidOfPrinter);
+
+                // Evalues to true if canWriteButeNotRead is false, and isGenericUuidOfPrinter is false, so if it's ever true the device is not a printer
+                if (!deviceIsPrinter)
+                {
+                    _socket.Close();
+                    _socket.Dispose();
+                    continue;
+                };
+
+                if (printer == null)
+                {
+                    status = "Either you are connected to the printer, but it isn't connected to you, and vice versa.";
+                    CrossToastPopUp.Current.ShowToastError(status);
+                    return null;
+                }
+
+                try
+                {
+                    _socket.Connect();
+
+                    return _socket;
+                }
+                catch (Java.IO.IOException ioEx)
+                {
+                    _socket.Close();
+                    continue;
                 }
             }
-
-            if (printer == null)
-            {
-                var status = "Either you are connected to the printer, but it isn't connected to you, and vice versa.";
-                CrossToastPopUp.Current.ShowToastError(status);
-                return null;
-            }
-            Java.Util.UUID uuidOfPrinter = printer.GetUuids()[0].Uuid;
-            BluetoothSocket _socket = printer.CreateRfcommSocketToServiceRecord(uuidOfPrinter);
-            try
-            {
-                _socket.Connect();
-            }
-            catch (Java.IO.IOException ioEx)
-            {
-                string status = $"The device you are trying to connect to is turned off or unavailable\nDetailed: {ioEx.Message}";
-                CrossToastPopUp.Current.ShowToastError(status);
-                return null;
-            }
-
-            var isConnected = _socket.IsConnected;
-            if (!isConnected)
-            {
-                CrossToastPopUp.Current.ShowToastError("Unable to connect to bluetooth device.");
-                return null;
-            }
-
-            return _socket;
-
+            status = "None of the device you are paired to are printers.";
+            CrossToastPopUp.Current.ShowToastError(status);
+            return null;
         }
+        
 
         /// <summary>
-        /// This is used to print text, used in <see cref="PrintPage.IssueReceipt(object, EventArgs)">IssueReceipt</see>.
-        /// </summary>
-        /// <param name="_socket"></param>
-        /// <param name="text"></param>
-        /// <returns></returns>
-        public static async Task PrintStringAsync(BluetoothSocket _socket, Dictionary<string, string> text)
+            /// This is used to print text, used in <see cref="PrintPage.IssueReceipt(object, EventArgs)">IssueReceipt</see>.
+            /// </summary>
+            /// <param name="_socket"></param>
+            /// <param name="text"></param>
+            /// <returns></returns>
+        public async Task PrintStringAsync(BluetoothSocket _socket, Dictionary<string, string> text)
         {
             try
             {
@@ -144,4 +193,3 @@ namespace MobileApp
         }
     }
 }
-        
